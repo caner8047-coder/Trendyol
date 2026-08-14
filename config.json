@@ -1,5 +1,14 @@
 {
   "name": "Trendyol Çocuk En Çok Satanlar",
+  "profile": "cocuk",
+  "reportTitle": "Trendyol Çocuk En Çok Satanlar",
+  "telegramTitle": "Trendyol Çocuk Günlük Raporu",
+  "sourceLabel": "Trendyol çocuk / En Çok Satan",
+  "themes": [
+    { "name": "Manyetik yapı/puzzle", "keywords": "manyetik|mıknatıs|magnet|puzzle|blok" },
+    { "name": "Çocuk giyim/aksesuar", "keywords": "pantolon|üst|boxer|ayakkabı|toka|çanta|giyim" },
+    { "name": "Duyusal/eğitici oyuncak", "keywords": "duyusal|eğitici|montessori|fidget|zeka" }
+  ],
   "searchUrl": "https://www.trendyol.com/sr?q=%C3%A7ocuk&qt=%C3%A7ocuk&st=%C3%A7ocuk&os=1&sst=BEST_SELLER",
   "query": "çocuk",
   "sort": "BEST_SELLER",

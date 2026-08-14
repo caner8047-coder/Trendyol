@@ -1,0 +1,35 @@
+{
+  "profile": "erkek",
+  "name": "Trendyol Erkek En Çok Satanlar",
+  "reportTitle": "Trendyol Erkek En Çok Satanlar",
+  "telegramTitle": "Trendyol Erkek Günlük Raporu",
+  "sourceLabel": "Trendyol erkek / En Çok Satan",
+  "themes": [
+    { "name": "Üst giyim", "keywords": "tişört|t-shirt|gömlek|sweatshirt|kazak|ceket|mont|polo" },
+    { "name": "Alt giyim", "keywords": "pantolon|jean|şort|eşofman|jogger" },
+    { "name": "Ayakkabı", "keywords": "ayakkabı|sneaker|bot|terlik|loafer" },
+    { "name": "İç giyim/basic", "keywords": "boxer|külot|çorap|atlet|fanila" },
+    { "name": "Aksesuar ve bakım", "keywords": "saat|çanta|cüzdan|kemer|parfüm|bakım|tıraş" }
+  ],
+  "searchUrl": "https://www.trendyol.com/sr?q=erkek&qt=erkek&st=erkek&os=1&sst=BEST_SELLER",
+  "query": "erkek",
+  "sort": "BEST_SELLER",
+  "maxProducts": 200,
+  "minimumProducts": 200,
+  "maxPagesPerSegment": 20,
+  "searchSegments": [
+    { "name": "genel-erkek", "query": "erkek" },
+    { "name": "erkek-giyim", "query": "erkek giyim" },
+    { "name": "erkek-ayakkabi", "query": "erkek ayakkabı" },
+    { "name": "erkek-aksesuar", "query": "erkek aksesuar" },
+    { "name": "erkek-parfum", "query": "erkek parfüm" },
+    { "name": "erkek-bakim", "query": "erkek bakım" }
+  ],
+  "dailyFullDetailTopN": 200,
+  "dailyRotatingDetailN": 0,
+  "hotDetailLimit": 25,
+  "detailConcurrency": 2,
+  "requestDelayMs": 1800,
+  "timezone": "Europe/Istanbul",
+  "dailyRunTime": "09:30"
+}

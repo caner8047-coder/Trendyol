@@ -5,7 +5,18 @@ const path = require('path');
 const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
-const config = JSON.parse(fs.readFileSync(path.join(ROOT, 'config.json'), 'utf8'));
+function cliArg(name, fallback = null) {
+  const index = process.argv.indexOf(`--${name}`);
+  const inline = process.argv.find(arg => arg.startsWith(`--${name}=`));
+  if (inline) return inline.slice(name.length + 3);
+  return index >= 0 && process.argv[index + 1] ? process.argv[index + 1] : fallback;
+}
+const PROFILE = cliArg('profile', 'cocuk');
+const CONFIG_FILE = PROFILE === 'cocuk' ? path.join(ROOT, 'config.json') : path.join(ROOT, 'profiles', `${PROFILE}.json`);
+if (!fs.existsSync(CONFIG_FILE)) throw new Error(`Profil ayarı bulunamadı: ${CONFIG_FILE}`);
+const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+const OUTPUT_ROOT = PROFILE === 'cocuk' ? ROOT : path.join(ROOT, 'categories', PROFILE);
+const OUTPUT_PREFIX = path.relative(ROOT, OUTPUT_ROOT).split(path.sep).join('/');
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 function mkdir(dir) { fs.mkdirSync(dir, { recursive: true }); }
@@ -377,11 +388,10 @@ function generateReport(products, date, quality) {
   const stockRisk = products.filter(p => p.stock_status === 'OutOfStock' || /son \d+ ürün|tüken/i.test(p.stock_signal || ''));
   const prices = products.map(p => Number(p.price)).filter(Number.isFinite);
   const brandCounts = Object.entries(products.reduce((a,p)=>{a[p.brand||'Belirsiz']=(a[p.brand||'Belirsiz']||0)+1;return a;},{})).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const themes = [
-    ['Manyetik yapı/puzzle', /manyetik|mıknatıs|magnet|puzzle|blok/i],
-    ['Çocuk giyim/aksesuar', /pantolon|üst|boxer|ayakkabı|toka|çanta|giyim/i],
-    ['Duyusal/eğitici oyuncak', /duyusal|eğitici|montessori|fidget|zeka/i]
-  ].map(([name,re]) => [name, products.filter(p=>re.test(p.title||'')).length]).sort((a,b)=>b[1]-a[1]);
+  const themes = (config.themes || []).map(theme => {
+    const re = new RegExp(theme.keywords, 'i');
+    return [theme.name, products.filter(p => re.test(p.title || '')).length];
+  }).sort((a,b)=>b[1]-a[1]);
   const priceBands = [
     ['250 TL altı', p=>p<250], ['250–500 TL', p=>p>=250&&p<500],
     ['500–1.000 TL', p=>p>=500&&p<1000], ['1.000 TL+', p=>p>=1000]
@@ -391,8 +401,8 @@ function generateReport(products, date, quality) {
     ? `${products.length} ürünün tamamı günlük detay yenilemesinde.`
     : `İlk ${quality.selection?.topN || 0} ürün günlük, ${quality.selection?.rotationN || 0} ürün dönüşümlü yenileniyor${quality.selection?.hotN ? `; ${quality.selection.hotN} hızlı değişen ürün ayrıca önceliklendirildi` : ''}.`;
   const topFields = [['bestseller_rank','Sıra'],['title','Ürün'],['price','Fiyat TL'],['seller_name','Satıcı'],['rating','Puan'],['rating_count','Değerlendirme'],['review_count','Yorum'],['question_count','Soru'],['sales_signal','Satış sinyali']];
-  return `# Trendyol Çocuk En Çok Satanlar — ${date}\n\n` +
-    `> Kaynak: [Trendyol çocuk / En Çok Satan](${config.searchUrl})\n> Toplama zamanı: ${products[0]?.captured_at || '-'}\n> Havuz: ${products.length} ürün | Bugün detay yenilenen: ${quality.detailRefreshed}/${quality.detailAttempted} | Kalite: **${quality.status}**\n\n` +
+  return `# ${config.reportTitle || config.name} — ${date}\n\n` +
+    `> Kaynak: [${config.sourceLabel || config.name}](${config.searchUrl})\n> Toplama zamanı: ${products[0]?.captured_at || '-'}\n> Havuz: ${products.length} ürün | Bugün detay yenilenen: ${quality.detailRefreshed}/${quality.detailAttempted} | Kalite: **${quality.status}**\n\n` +
     `## Yönetici özeti\n\n` +
     `- İzlenen ürünlerde medyan fiyat **${median(prices)?.toLocaleString('tr-TR') || '-'} TL**.\n` +
     `- En görünür markalar: ${brandCounts.map(([b,c])=>`${b} (${c})`).join(', ') || '-'}.\n` +
@@ -443,7 +453,7 @@ function qualityFor(products) {
 async function main() {
   if (!fs.existsSync(CHROME)) throw new Error(`Chrome bulunamadı: ${CHROME}`);
   const { date, timestamp } = nowIstanbul();
-  mkdir(path.join(ROOT, 'data')); mkdir(path.join(ROOT, 'reports')); mkdir(path.join(ROOT, 'quality'));
+  mkdir(path.join(OUTPUT_ROOT, 'data')); mkdir(path.join(OUTPUT_ROOT, 'reports')); mkdir(path.join(OUTPUT_ROOT, 'quality'));
   const browser = await chromium.launch({ headless: true, executablePath: CHROME, args: ['--disable-blink-features=AutomationControlled','--lang=tr-TR'] });
   const context = await browser.newContext({ locale: 'tr-TR', timezoneId: config.timezone, userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36' });
   let scored;
@@ -457,7 +467,7 @@ async function main() {
       return;
     }
     if (listed.length < Number(config.minimumProducts || config.maxProducts || 100)) throw new Error(`Liste sayfalarından yalnız ${listed.length} benzersiz ürün alındı; gereken minimum ${config.minimumProducts || config.maxProducts || 100}. Son geçerli rapor korunuyor. Sayfa özeti: ${JSON.stringify(listingResult.pageStats)}`);
-    const historyFile = path.join(ROOT, 'data', 'history.csv');
+    const historyFile = path.join(OUTPUT_ROOT, 'data', 'history.csv');
     const history = readCsv(historyFile);
     const selection = chooseDetailItems(listed, history, date);
     const detailed = new Array(selection.items.length); let cursor = 0;
@@ -478,38 +488,42 @@ async function main() {
       process.exitCode = 2;
       return;
     }
-    const snapshotDir = path.join(ROOT, 'snapshots', date); mkdir(snapshotDir);
+    const snapshotDir = path.join(OUTPUT_ROOT, 'snapshots', date); mkdir(snapshotDir);
     fs.writeFileSync(path.join(snapshotDir, 'products.json'), JSON.stringify(scored, null, 2) + '\n');
     writeCsv(path.join(snapshotDir, 'products.csv'), scored, columns);
     const oldOtherDays = history.filter(r => r.date !== date);
     writeCsv(historyFile, [...oldOtherDays, ...scored], columns);
-    const listsDir = path.join(ROOT, 'lists', date); mkdir(listsDir);
+    const listsDir = path.join(OUTPUT_ROOT, 'lists', date); mkdir(listsDir);
     const lists = buildLists(scored);
     for (const [name, rows] of Object.entries(lists)) {
       writeCsv(path.join(listsDir, name), rows, listCols);
       fs.writeFileSync(path.join(listsDir, name.replace(/\.csv$/, '.md')), `# ${listTitles[name]} — ${date}\n\n${mdTable(rows, listMdFields)}\n`);
     }
-    fs.writeFileSync(path.join(ROOT, 'quality', `${date}.json`), JSON.stringify(quality, null, 2) + '\n');
-    fs.writeFileSync(path.join(ROOT, 'quality', 'latest.json'), JSON.stringify(quality, null, 2) + '\n');
+    fs.writeFileSync(path.join(OUTPUT_ROOT, 'quality', `${date}.json`), JSON.stringify(quality, null, 2) + '\n');
+    fs.writeFileSync(path.join(OUTPUT_ROOT, 'quality', 'latest.json'), JSON.stringify(quality, null, 2) + '\n');
     const report = generateReport(scored, date, quality);
-    fs.writeFileSync(path.join(ROOT, 'reports', `${date}.md`), report);
-    fs.writeFileSync(path.join(ROOT, 'reports', 'latest.md'), report);
+    fs.writeFileSync(path.join(OUTPUT_ROOT, 'reports', `${date}.md`), report);
+    fs.writeFileSync(path.join(OUTPUT_ROOT, 'reports', 'latest.md'), report);
     const topTrend = [...scored].sort((a,b)=>b.trend_score-a.trend_score).slice(0,3);
     const topNiche = scored.filter(p=>(p.sales_signal_min||0)>=100&&(p.review_count??p.rating_count)!==null&&(p.review_count??p.rating_count)<2500).sort((a,b)=>b.niche_score-a.niche_score).slice(0,3);
+    const telegramStrategy = Number(quality.selection?.topN || 0) >= scored.length
+      ? `♻️ ${scored.length} ürünün tamamı günlük detay taramasında`
+      : `♻️ İlk ${quality.selection.topN} günlük + ${quality.selection.rotationN} dönüşümlü + ${quality.selection.hotN} hızlı değişen ürün`;
     const telegram = [
-      `📊 Trendyol Çocuk Günlük Raporu — ${date}`,
+      `📊 ${config.telegramTitle || config.name} — ${date}`,
       `✅ ${scored.length} ürünlük havuz | ${quality.detailRefreshed}/${quality.detailAttempted} detay yenilendi | kalite ${quality.status}`,
-      `♻️ İlk ${quality.selection.topN} günlük + ${quality.selection.rotationN} dönüşümlü + ${quality.selection.hotN} hızlı değişen ürün`,
+      telegramStrategy,
       `🔥 Trend: ${topTrend.map((p,i)=>`${i+1}) ${p.title} (${p.price} TL)`).join(' | ')}`,
       `🎯 Niche: ${topNiche.map((p,i)=>`${i+1}) ${p.title}`).join(' | ') || 'Baz çizgisi oluşuyor'}`,
-      `📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/reports/${date}.md`,
+      `📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/${OUTPUT_PREFIX ? `${OUTPUT_PREFIX}/` : ''}reports/${date}.md`,
       `Not: Yükselen/düşen listeleri ikinci ölçümden itibaren günlük farklarla dolacaktır.`
     ].join('\n');
-    fs.writeFileSync(path.join(ROOT, 'reports', 'telegram-latest.txt'), telegram + '\n');
-    fs.writeFileSync(path.join(ROOT, 'data', 'latest.json'), JSON.stringify(scored, null, 2) + '\n');
-    writeCsv(path.join(ROOT, 'data', 'latest.csv'), scored, columns);
-    console.log(JSON.stringify({ ok: quality.status === 'PASS', date, quality, files: { report: `reports/${date}.md`, snapshot: `snapshots/${date}/products.csv`, lists: `lists/${date}` } }, null, 2));
+    fs.writeFileSync(path.join(OUTPUT_ROOT, 'reports', 'telegram-latest.txt'), telegram + '\n');
+    fs.writeFileSync(path.join(OUTPUT_ROOT, 'data', 'latest.json'), JSON.stringify(scored, null, 2) + '\n');
+    writeCsv(path.join(OUTPUT_ROOT, 'data', 'latest.csv'), scored, columns);
+    const prefix = OUTPUT_PREFIX ? `${OUTPUT_PREFIX}/` : '';
+    console.log(JSON.stringify({ ok: quality.status === 'PASS', profile: PROFILE, date, quality, files: { report: `${prefix}reports/${date}.md`, snapshot: `${prefix}snapshots/${date}/products.csv`, lists: `${prefix}lists/${date}` } }, null, 2));
   } finally { await context.close(); await browser.close(); }
 }
-module.exports = { ROOT, columns, listCols, listMdFields, listTitles, buildLists, generateReport, mdTable, qualityFor, writeCsv };
+module.exports = { ROOT, OUTPUT_ROOT, PROFILE, config, columns, listCols, listMdFields, listTitles, buildLists, generateReport, mdTable, qualityFor, writeCsv };
 if (require.main === module) main().catch(err => { console.error(err.stack || err.message); process.exit(1); });

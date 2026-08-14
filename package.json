@@ -5,6 +5,8 @@
   "description": "Trendyol çocuk araması için günlük ürün, fiyat, stok ve trend veri havuzu",
   "scripts": {
     "collect": "node scripts/collect.cjs",
-    "quality": "node scripts/quality_check.cjs"
+    "collect:erkek": "node scripts/collect.cjs --profile erkek",
+    "quality": "node scripts/quality_check.cjs",
+    "quality:erkek": "node scripts/quality_check.cjs --profile erkek"
   }
 }

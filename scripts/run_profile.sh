@@ -15,7 +15,11 @@ cd "$PROJECT_DIR"
 export NODE_PATH="$NODE_MODULES"
 mkdir -p categories
 
-"$NODE_BIN" scripts/collect.cjs --profile "$PROFILE"
+if ! "$NODE_BIN" scripts/collect.cjs --profile "$PROFILE"; then
+  echo "İlk toplama denemesi başarısız: $PROFILE. 120 saniye sonra bir kez daha denenecek." >&2
+  sleep 120
+  "$NODE_BIN" scripts/collect.cjs --profile "$PROFILE"
+fi
 "$NODE_BIN" scripts/quality_check.cjs --profile "$PROFILE"
 
 git add README.md config.json profiles package.json scripts data snapshots lists reports quality categories

@@ -18,6 +18,7 @@ const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
 const OUTPUT_ROOT = PROFILE === 'cocuk' ? ROOT : path.join(ROOT, 'categories', PROFILE);
 const OUTPUT_PREFIX = path.relative(ROOT, OUTPUT_ROOT).split(path.sep).join('/');
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const LISTING_CACHE_FILE = path.join(OUTPUT_ROOT, 'data', 'listing-cache.json');
 
 function mkdir(dir) { fs.mkdirSync(dir, { recursive: true }); }
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
@@ -83,6 +84,28 @@ function readCsv(file) {
   row.push(cell); rows.push(row);
   const headers = rows.shift();
   return rows.filter(r => r.some(Boolean)).map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] || ''])));
+}
+function writeListingCache(listingResult) {
+  const minimum = Number(config.minimumProducts || config.maxProducts || 100);
+  if (!listingResult || listingResult.items.length < minimum) return;
+  fs.writeFileSync(LISTING_CACHE_FILE, JSON.stringify({
+    profile: PROFILE,
+    searchUrl: config.searchUrl,
+    capturedAt: new Date().toISOString(),
+    items: listingResult.items,
+    pageStats: listingResult.pageStats
+  }, null, 2) + '\n');
+}
+function readFreshListingCache() {
+  if (!fs.existsSync(LISTING_CACHE_FILE)) return null;
+  try {
+    const cached = JSON.parse(fs.readFileSync(LISTING_CACHE_FILE, 'utf8'));
+    const ageMs = Date.now() - new Date(cached.capturedAt).getTime();
+    const maxAgeMs = Number(config.listingCacheMaxAgeMinutes || 30) * 60 * 1000;
+    const minimum = Number(config.minimumProducts || config.maxProducts || 100);
+    if (cached.profile !== PROFILE || cached.searchUrl !== config.searchUrl || ageMs < 0 || ageMs > maxAgeMs || !Array.isArray(cached.items) || cached.items.length < minimum) return null;
+    return { items: cached.items, pageStats: cached.pageStats || [], fromCache: true, capturedAt: cached.capturedAt };
+  } catch { return null; }
 }
 const numericHistoryFields = new Set([
   'source_page','search_position','bestseller_rank','category_rank','rank_delta','trend_score','niche_score','seller_score','price','original_price','discount_percent','price_delta_percent',
@@ -200,10 +223,17 @@ async function collectListing(page) {
     let zeroStreak = 0; let segmentPosition = 0;
     for (let pageNo = 1; pageNo <= maxPages && unique.length < config.maxProducts; pageNo++) {
       const pageUrl = new URL(config.searchUrl);
-      pageUrl.searchParams.set('q', segment.query); pageUrl.searchParams.set('qt', segment.query); pageUrl.searchParams.set('st', segment.query);
+      const sourceQuery = segment.query || (segment.wc ? `wc=${segment.wc}` : null) || config.sourceLabel || segment.name;
+      if (segment.wc) {
+        pageUrl.searchParams.set('wc', segment.wc);
+      } else if (!segment.preserveUrl && segment.query) {
+        pageUrl.searchParams.set('q', segment.query); pageUrl.searchParams.set('qt', segment.query); pageUrl.searchParams.set('st', segment.query);
+      }
       pageUrl.searchParams.set('pi', String(pageNo));
       let cards = [];
-      const contentAttempts = segment === segments[0] && pageNo === 1 ? 3 : 1;
+      const contentAttempts = segment === segments[0] && pageNo === 1
+        ? Number(config.firstPageContentAttempts || 3)
+        : 1;
       for (let contentAttempt = 0; contentAttempt < contentAttempts; contentAttempt++) {
         await gotoWithRetry(page, pageUrl.toString());
         for (let i = 0; i < 5; i++) { await page.mouse.wheel(0, 2200); await page.waitForTimeout(650); }
@@ -221,10 +251,10 @@ async function collectListing(page) {
       for (const card of cards) {
         const id = (card.href.match(/-p-(\d+)/) || [])[1];
         if (!id || seen.has(id) || !card.text.trim() || !/Sepete Ekle/i.test(card.text)) continue;
-        seen.add(id); segmentPosition++; unique.push({ ...card, sourcePage: pageNo, sourceSegment: segment.name, sourceQuery: segment.query, segmentPosition }); added++;
+        seen.add(id); segmentPosition++; unique.push({ ...card, sourcePage: pageNo, sourceSegment: segment.name, sourceQuery, segmentPosition }); added++;
         if (unique.length >= config.maxProducts) break;
       }
-      pageStats.push({ segment: segment.name, query: segment.query, page: pageNo, cards: cards.length, added, segmentTotal: segmentPosition, total: unique.length, url: pageUrl.toString() });
+      pageStats.push({ segment: segment.name, query: sourceQuery, page: pageNo, cards: cards.length, added, segmentTotal: segmentPosition, total: unique.length, url: pageUrl.toString() });
       if (segment === segments[0] && pageNo === 1 && added < 10) throw new Error(`İlk sonuç sayfasından yalnız ${added} ürün alındı; erişim engeli olabilir.`);
       zeroStreak = added === 0 ? zeroStreak + 1 : 0;
       if (zeroStreak >= 3) break;
@@ -259,12 +289,16 @@ async function collectDetail(context, item, index) {
     }));
     const p = jsonLdProduct(payload.jsonld);
     const body = payload.body;
-    const offer = p.offers || {};
+    const offer = Array.isArray(p.offers) ? (p.offers[0] || {}) : (p.offers || {});
     const rating = p.aggregateRating || {};
     const shipping = offer.shippingDetails || {};
     const delivery = shipping.deliveryTime || {};
     const title = normalize(p.name) || item.listing_title || firstMatch(body, /En Çok Satılan #\d+\s+(.+?)\s+\d[.,]\d\s+\d+ Değerlendirme/s);
-    const seller = firstMatch(body, /Bu ürün\s+(.+?)\s+tarafından gönderilecektir\./i) || firstMatch(body, /Öne Çıkan Özellikler:\s*Bu ürün\s+(.+?)\s+tarafından/i);
+    const sellerCandidate = normalize(offer.seller?.name || offer.seller?.legalName) ||
+      firstMatch(body, /Bu ürün\s+(.+?)\s+tarafından gönderilecektir\./i) ||
+      firstMatch(body, /Öne Çıkan Özellikler:\s*Bu ürün\s+(.+?)\s+tarafından/i) ||
+      firstMatch(body, /(?:^|\n)Satıcı\s*:?\s*\n([^\n]{2,100})/im);
+    const seller = /^(?:Trendyol'da Satış Yap|Giriş Yap|Favorilerim|Sepetim)$/i.test(sellerCandidate || '') ? null : sellerCandidate;
     const sellerBlock = seller ? body.slice(Math.max(0, body.lastIndexOf(seller)), body.lastIndexOf(seller) + 250) : '';
     const price = schemaNumber(offer.price) ?? item.listing_price;
     const original = item.listing_original_price && item.listing_original_price > price ? item.listing_original_price : null;
@@ -458,11 +492,29 @@ async function main() {
   const context = await browser.newContext({ locale: 'tr-TR', timezoneId: config.timezone, userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36' });
   let scored;
   try {
-    const listingPage = await context.newPage();
-    const listingResult = await collectListing(listingPage); await listingPage.close();
+    const listingSourceFile = cliArg('listing-source-file');
+    let listingResult = process.argv.includes('--use-listing-cache') ? readFreshListingCache() : null;
+    if (!listingResult && listingSourceFile) {
+      const imported = JSON.parse(fs.readFileSync(path.resolve(listingSourceFile), 'utf8'));
+      listingResult = {
+        items: imported.items.map((card, index) => parseListingCard(
+          card.text, index + 1, card.href, card.title, card.brand,
+          card.sourcePage, card.sourceSegment, card.sourceQuery, card.segmentPosition
+        )),
+        pageStats: imported.pageStats || [],
+        importedAt: imported.capturedAt || null
+      };
+      writeListingCache(listingResult);
+    }
+    if (!listingResult) {
+      const listingPage = await context.newPage();
+      try { listingResult = await collectListing(listingPage); }
+      finally { await listingPage.close(); }
+      writeListingCache(listingResult);
+    }
     const listed = listingResult.items;
     if (process.argv.includes('--listing-only')) {
-      console.log(JSON.stringify({ ok: listed.length >= Number(config.minimumProducts || config.maxProducts || 100), listingOnly: true, uniqueProducts: listed.length, pageStats: listingResult.pageStats, first: listed[0], last: listed[listed.length - 1] }, null, 2));
+      console.log(JSON.stringify({ ok: listed.length >= Number(config.minimumProducts || config.maxProducts || 100), listingOnly: true, fromCache: Boolean(listingResult.fromCache), uniqueProducts: listed.length, pageStats: listingResult.pageStats, first: listed[0], last: listed[listed.length - 1] }, null, 2));
       if (listed.length < Number(config.minimumProducts || config.maxProducts || 100)) process.exitCode = 2;
       return;
     }

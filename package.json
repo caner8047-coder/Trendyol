@@ -6,7 +6,9 @@
   "scripts": {
     "collect": "node scripts/collect.cjs",
     "collect:erkek": "node scripts/collect.cjs --profile erkek",
+    "collect:ev-yasam": "node scripts/collect.cjs --profile ev-yasam",
     "quality": "node scripts/quality_check.cjs",
-    "quality:erkek": "node scripts/quality_check.cjs --profile erkek"
+    "quality:erkek": "node scripts/quality_check.cjs --profile erkek",
+    "quality:ev-yasam": "node scripts/quality_check.cjs --profile ev-yasam"
   }
 }

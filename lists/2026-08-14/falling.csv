@@ -1,1 +1,1 @@
-bestseller_rank,rank_delta,trend_score,niche_score,product_id,title,brand,seller_name,price,original_price,price_delta_percent,stock_status,sales_signal,rating,review_count,review_delta,question_count,campaigns,delivery_summary,url
+bestseller_rank,rank_delta,trend_score,niche_score,product_id,title,brand,seller_name,price,original_price,price_delta_percent,stock_status,sales_signal,rating,review_count,review_delta,question_count,campaigns,delivery_summary,detail_status,detail_age_days,url

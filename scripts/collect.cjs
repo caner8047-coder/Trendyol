@@ -73,6 +73,59 @@ function readCsv(file) {
   const headers = rows.shift();
   return rows.filter(r => r.some(Boolean)).map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] || ''])));
 }
+const numericHistoryFields = new Set([
+  'source_page','search_position','bestseller_rank','category_rank','rank_delta','trend_score','niche_score','seller_score','price','original_price','discount_percent','price_delta_percent',
+  'sales_signal_min','rating','rating_count','review_count','review_delta','question_count','shipping_cost','handling_days_min','handling_days_max','transit_days_min','transit_days_max','sample_review_count','sample_review_avg','detail_age_days'
+]);
+const jsonHistoryFields = new Set(['campaigns','properties','data_sources','field_availability','detail_selection']);
+function hydrateHistoryRow(row) {
+  const out = {};
+  for (const [key, value] of Object.entries(row || {})) {
+    if (value === '') out[key] = null;
+    else if (numericHistoryFields.has(key)) out[key] = Number(value);
+    else if (jsonHistoryFields.has(key)) { try { out[key] = JSON.parse(value); } catch { out[key] = value; } }
+    else if (key === 'detail_ok' || key === 'detail_attempted') out[key] = value === 'true' ? true : value === 'false' ? false : null;
+    else out[key] = value;
+  }
+  return out;
+}
+function latestHistoryByProduct(history) {
+  const rows = history.map(hydrateHistoryRow).sort((a, b) => String(b.captured_at || b.date || '').localeCompare(String(a.captured_at || a.date || '')));
+  const map = new Map();
+  for (const row of rows) if (row.product_id && !map.has(row.product_id)) map.set(row.product_id, row);
+  return map;
+}
+function chooseDetailItems(listed, history, date) {
+  const topN = Number(config.dailyFullDetailTopN || 200);
+  const rotateN = Number(config.dailyRotatingDetailN || 200);
+  const hotLimit = Number(config.hotDetailLimit || 50);
+  const reasons = new Map();
+  const add = (item, reason) => {
+    if (!item) return;
+    if (!reasons.has(item.product_id)) reasons.set(item.product_id, new Set());
+    reasons.get(item.product_id).add(reason);
+  };
+  listed.slice(0, topN).forEach(item => add(item, 'daily_top'));
+  const rotationPool = listed.slice(topN);
+  const blockCount = Math.max(1, Math.ceil(rotationPool.length / rotateN));
+  const dayNumber = Math.floor(Date.parse(`${date}T00:00:00Z`) / 86400000);
+  const rotationIndex = ((dayNumber % blockCount) + blockCount) % blockCount;
+  rotationPool.slice(rotationIndex * rotateN, rotationIndex * rotateN + rotateN).forEach(item => add(item, `rotation_${rotationIndex + 1}_of_${blockCount}`));
+  const previous = latestHistoryByProduct(history.filter(row => row.date && row.date < date));
+  const hot = listed.filter(item => {
+    const old = previous.get(item.product_id);
+    if (!old) return false;
+    const rankMove = Math.abs(Number(old.bestseller_rank || 0) - Number(item.bestseller_rank || 0));
+    const priceMove = Number(old.price) > 0 && Number(item.price) > 0 ? Math.abs(Number(item.price) / Number(old.price) - 1) * 100 : 0;
+    return rankMove >= 20 || priceMove >= 5 || old.stock_status !== item.stock_status;
+  }).sort((a, b) => {
+    const ao = previous.get(a.product_id); const bo = previous.get(b.product_id);
+    return Math.abs(Number(bo?.bestseller_rank || 0) - b.bestseller_rank) - Math.abs(Number(ao?.bestseller_rank || 0) - a.bestseller_rank);
+  }).slice(0, hotLimit);
+  hot.forEach(item => add(item, 'hot_change'));
+  const items = listed.filter(item => reasons.has(item.product_id)).map(item => ({ ...item, detail_selection: [...reasons.get(item.product_id)] }));
+  return { items, reasons, topN: Math.min(topN, listed.length), rotationN: Math.min(rotateN, rotationPool.length), rotationIndex, rotationBlocks: blockCount, hotN: hot.length };
+}
 function extractMoney(text) {
   const lines = String(text || '').split(/\n+/).map(normalize).filter(Boolean);
   const priceLines = lines.filter(line => /\bTL\b/.test(line) && !/Kupon|Taksit|aylık|başlayan|\/adet/i.test(line));
@@ -87,19 +140,32 @@ function pickCampaigns(text) {
   ];
   return [...new Set(patterns.flatMap(r => [...String(text || '').matchAll(r)].map(m => normalize(m[0]))))];
 }
-function parseListingCard(raw, position, href, listingTitle, listingBrand, sourcePage) {
+function parseListingCard(raw, position, href, listingTitle, listingBrand, sourcePage, sourceSegment, sourceQuery, segmentPosition) {
   const text = normalize(raw);
   const monies = extractMoney(raw);
   const explicitRank = firstMatch(text, /En Çok Satan\s+(\d+)\.\s*Ürün/i);
+  const price = monies.length ? monies[monies.length >= 2 ? monies.length - 2 : 0] : null;
+  const originalPrice = monies.length >= 2 ? monies[monies.length - 1] : null;
+  const rating = schemaNumber(firstMatch(text, /\b([1-5][.,]\d)\s*\([\d.]+\)/));
+  const ratingCount = trNumber(firstMatch(text, /\b[1-5][.,]\d\s*\(([\d.]+)\)/));
+  const title = normalize(listingTitle);
   return {
     product_id: productId(href), url: href.split('#')[0], merchant_id: merchantId(href),
-    search_position: position, bestseller_rank: position, category_rank: explicitRank ? Number(explicitRank) : null, source_page: sourcePage,
-    listing_title: normalize(listingTitle), listing_brand: normalize(listingBrand),
-    listing_text: text, listing_price: monies.length ? monies[monies.length >= 2 ? monies.length - 2 : 0] : null,
-    listing_original_price: monies.length >= 2 ? monies[monies.length - 1] : null,
+    search_position: position, bestseller_rank: position, category_rank: explicitRank ? Number(explicitRank) : null,
+    source_segment: sourceSegment, source_query: sourceQuery, segment_position: segmentPosition, source_page: sourcePage,
+    listing_title: title, listing_brand: normalize(listingBrand), title,
+    brand: normalize(listingBrand || brandFromUrl(href, title)),
+    listing_text: text, listing_price: price, listing_original_price: originalPrice,
+    price, original_price: originalPrice && originalPrice > price ? originalPrice : null,
+    discount_percent: originalPrice && price && originalPrice > price ? Math.round((1 - price / originalPrice) * 1000) / 10 : null,
+    currency: 'TRY', rating, rating_count: ratingCount,
+    stock_status: /Stokta Yok/i.test(text) ? 'OutOfStock' : 'InStock',
+    stock_signal: firstMatch(text, /(son \d+ ürün|tükenmek üzere|stokta yok)/i),
     sales_signal: firstMatch(text, /(Son\s+\d+\s+günde\s+[\d.,]+[BMK]?\+?\s+ürün\s+satıldı!?)/i),
+    sales_signal_min: compactNumber(firstMatch(text, /Son\s+\d+\s+günde\s+([\d.,]+[BMK]?\+?)/i)),
     campaigns: pickCampaigns(text),
-    badge: firstMatch(text, /(En Çok Satan\s+\d+\.\s*Ürün|En Çok Ziyaret Edilen\s+\d+\.\s*Ürün|En Çok Favorilenen\s+\d+\.\s*Ürün|Fenomen Seçimi)/i)
+    badge: firstMatch(text, /(En Çok Satan\s+\d+\.\s*Ürün|En Çok Ziyaret Edilen\s+\d+\.\s*Ürün|En Çok Favorilenen\s+\d+\.\s*Ürün|Fenomen Seçimi)/i),
+    detail_status: 'listing_only', detail_attempted: false, detail_ok: null
   };
 }
 async function gotoWithRetry(page, url, attempts = 3) {
@@ -116,34 +182,47 @@ async function gotoWithRetry(page, url, attempts = 3) {
   throw last;
 }
 async function collectListing(page) {
-  const seen = new Set(); const unique = []; const pageStats = []; let zeroStreak = 0;
-  const maxPages = Number(config.maxSearchPages || 8);
-  for (let pageNo = 1; pageNo <= maxPages && unique.length < config.maxProducts; pageNo++) {
-    const pageUrl = new URL(config.searchUrl);
-    pageUrl.searchParams.set('pi', String(pageNo));
-    await gotoWithRetry(page, pageUrl.toString());
-    for (let i = 0; i < 5; i++) { await page.mouse.wheel(0, 2200); await page.waitForTimeout(650); }
-    const cards = await page.locator('a[href*="-p-"]').evaluateAll(els => els.map(e => ({
-      href: e.href,
-      text: e.innerText,
-      title: e.querySelector('.prdct-desc-cntnr-name')?.textContent || e.querySelector('h2')?.innerText || e.querySelector('img[alt]')?.getAttribute('alt') || '',
-      brand: e.querySelector('.prdct-desc-cntnr-ttl')?.textContent || e.querySelector('h2 strong')?.innerText || e.querySelector('strong')?.innerText || ''
-    })));
-    let added = 0;
-    for (const card of cards) {
-      const id = (card.href.match(/-p-(\d+)/) || [])[1];
-      if (!id || seen.has(id) || !card.text.trim() || !/Sepete Ekle/i.test(card.text)) continue;
-      seen.add(id); unique.push({ ...card, sourcePage: pageNo }); added++;
-      if (unique.length >= config.maxProducts) break;
+  const seen = new Set(); const unique = []; const pageStats = [];
+  const segments = config.searchSegments?.length ? config.searchSegments : [{ name: 'genel-cocuk', query: config.query }];
+  const maxPages = Number(config.maxPagesPerSegment || 16);
+  for (const segment of segments) {
+    let zeroStreak = 0; let segmentPosition = 0;
+    for (let pageNo = 1; pageNo <= maxPages && unique.length < config.maxProducts; pageNo++) {
+      const pageUrl = new URL(config.searchUrl);
+      pageUrl.searchParams.set('q', segment.query); pageUrl.searchParams.set('qt', segment.query); pageUrl.searchParams.set('st', segment.query);
+      pageUrl.searchParams.set('pi', String(pageNo));
+      let cards = [];
+      const contentAttempts = segment === segments[0] && pageNo === 1 ? 3 : 1;
+      for (let contentAttempt = 0; contentAttempt < contentAttempts; contentAttempt++) {
+        await gotoWithRetry(page, pageUrl.toString());
+        for (let i = 0; i < 5; i++) { await page.mouse.wheel(0, 2200); await page.waitForTimeout(650); }
+        cards = await page.locator('a[href*="-p-"]').evaluateAll(els => els.map(e => ({
+          href: e.href,
+          text: e.innerText,
+          title: e.querySelector('.prdct-desc-cntnr-name')?.textContent || e.querySelector('h2')?.innerText || e.querySelector('img[alt]')?.getAttribute('alt') || '',
+          brand: e.querySelector('.prdct-desc-cntnr-ttl')?.textContent || e.querySelector('h2 strong')?.innerText || e.querySelector('strong')?.innerText || ''
+        })));
+        const usable = cards.filter(card => /-p-\d+/.test(card.href) && card.text.trim() && /Sepete Ekle/i.test(card.text)).length;
+        if (usable >= 10 || contentAttempt === contentAttempts - 1) break;
+        await sleep(15000 * (contentAttempt + 1));
+      }
+      let added = 0;
+      for (const card of cards) {
+        const id = (card.href.match(/-p-(\d+)/) || [])[1];
+        if (!id || seen.has(id) || !card.text.trim() || !/Sepete Ekle/i.test(card.text)) continue;
+        seen.add(id); segmentPosition++; unique.push({ ...card, sourcePage: pageNo, sourceSegment: segment.name, sourceQuery: segment.query, segmentPosition }); added++;
+        if (unique.length >= config.maxProducts) break;
+      }
+      pageStats.push({ segment: segment.name, query: segment.query, page: pageNo, cards: cards.length, added, segmentTotal: segmentPosition, total: unique.length, url: pageUrl.toString() });
+      if (segment === segments[0] && pageNo === 1 && added < 10) throw new Error(`İlk sonuç sayfasından yalnız ${added} ürün alındı; erişim engeli olabilir.`);
+      zeroStreak = added === 0 ? zeroStreak + 1 : 0;
+      if (zeroStreak >= 3) break;
+      await sleep(added === 0 ? config.requestDelayMs * 3 : config.requestDelayMs);
     }
-    pageStats.push({ page: pageNo, cards: cards.length, added, total: unique.length, url: pageUrl.toString() });
-    if (pageNo === 1 && added < 10) throw new Error(`İlk sonuç sayfasından yalnız ${added} ürün alındı; erişim engeli olabilir.`);
-    zeroStreak = added === 0 ? zeroStreak + 1 : 0;
-    if (zeroStreak >= 3) break;
-    await sleep(added === 0 ? config.requestDelayMs * 3 : config.requestDelayMs);
+    if (unique.length >= config.maxProducts) break;
   }
   return {
-    items: unique.slice(0, config.maxProducts).map((c, i) => parseListingCard(c.text, i + 1, c.href, c.title, c.brand, c.sourcePage)),
+    items: unique.slice(0, config.maxProducts).map((c, i) => parseListingCard(c.text, i + 1, c.href, c.title, c.brand, c.sourcePage, c.sourceSegment, c.sourceQuery, c.segmentPosition)),
     pageStats
   };
 }
@@ -184,7 +263,7 @@ async function collectDetail(context, item, index) {
     const reviews = Array.isArray(p.review) ? p.review : [];
     const properties = Object.fromEntries((p.additionalProperty || []).map(x => [normalize(x.name), normalize(x.unitText || x.value)]));
     return {
-      ...item, detail_ok: true, detail_error: null, canonical_url: payload.canonical,
+      ...item, detail_status: 'refreshed', detail_attempted: true, detail_ok: true, detail_error: null, canonical_url: payload.canonical,
       title, brand: normalize(p.brand?.name || p.manufacturer || item.listing_brand || brandFromUrl(item.url, title)), category: normalize(p.pattern),
       seller_name: seller, seller_score: trNumber(firstMatch(sellerBlock, new RegExp(`${String(seller || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+([0-9]+(?:[.,][0-9]+)?)`))),
       price, original_price: original,
@@ -207,8 +286,35 @@ async function collectDetail(context, item, index) {
       sample_review_avg: reviews.length ? Math.round(reviews.reduce((a, r) => a + Number(r.reviewRating?.ratingValue || 0), 0) / reviews.length * 100) / 100 : null
     };
   } catch (e) {
-    return { ...item, detail_ok: false, detail_error: normalize(e.message).slice(0, 300) };
+    return { ...item, detail_status: 'failed', detail_attempted: true, detail_ok: false, detail_error: normalize(e.message).slice(0, 300) };
   } finally { await page.close(); await sleep(config.requestDelayMs); }
+}
+function ageInDays(date, timestamp) {
+  if (!timestamp) return null;
+  const current = Date.parse(`${date}T00:00:00Z`);
+  const previous = Date.parse(`${String(timestamp).slice(0, 10)}T00:00:00Z`);
+  return Number.isFinite(current) && Number.isFinite(previous) ? Math.max(0, Math.floor((current - previous) / 86400000)) : null;
+}
+function mergePoolProducts(listed, detailResults, history, timestamp, date, selection) {
+  const resultMap = new Map(detailResults.map(p => [p.product_id, p]));
+  const previous = latestHistoryByProduct(history);
+  return listed.map(item => {
+    const old = previous.get(item.product_id);
+    const fresh = resultMap.get(item.product_id);
+    let base;
+    if (fresh?.detail_ok) {
+      base = { ...old, ...fresh, detail_status: 'refreshed', detail_attempted: true, detail_ok: true, detail_refreshed_at: timestamp, detail_age_days: 0 };
+    } else if (fresh) {
+      const oldRefreshedAt = old?.detail_refreshed_at || old?.captured_at || null;
+      base = { ...old, ...item, ...fresh, detail_status: old ? 'failed_carried_forward' : 'failed', detail_attempted: true, detail_ok: false, detail_refreshed_at: oldRefreshedAt, detail_age_days: ageInDays(date, oldRefreshedAt) };
+    } else {
+      const oldRefreshedAt = old?.detail_refreshed_at || (old?.detail_ok ? old.captured_at : null);
+      base = { ...old, ...item, detail_status: oldRefreshedAt ? 'carried_forward' : 'listing_only', detail_attempted: false, detail_ok: null, detail_refreshed_at: oldRefreshedAt, detail_age_days: ageInDays(date, oldRefreshedAt), detail_selection: [] };
+    }
+    base.date = date; base.captured_at = timestamp; base.query = config.query; base.sort = config.sort;
+    base.data_sources = base.detail_status === 'refreshed' ? ['search_result_dom','product_detail_jsonld','product_detail_dom'] : old ? ['search_result_dom','historical_product_detail'] : ['search_result_dom'];
+    return base;
+  });
 }
 function previousByProduct(history, today) {
   const prior = history.filter(r => r.date && r.date < today).sort((a, b) => b.date.localeCompare(a.date));
@@ -228,11 +334,11 @@ function scoreProducts(products, history, today) {
   });
 }
 const columns = [
-  'date','captured_at','query','sort','source_page','search_position','bestseller_rank','category_rank','rank_delta','trend_score','niche_score',
+  'date','captured_at','query','sort','source_segment','source_query','segment_position','source_page','search_position','bestseller_rank','category_rank','rank_delta','trend_score','niche_score',
   'product_id','merchant_id','title','brand','category','url','seller_name','seller_score','price','original_price','discount_percent','price_delta_percent','currency',
   'campaigns','stock_status','stock_signal','sales_signal','sales_signal_min','rating','rating_count','review_count','review_delta','question_count',
   'basket_signal','favorite_signal','view_signal','shipping_cost','shipping_currency','handling_days_min','handling_days_max','transit_days_min','transit_days_max','delivery_summary',
-  'badge','image_url','properties','sample_review_count','sample_review_avg','data_sources','field_availability','detail_ok','detail_error'
+  'badge','image_url','properties','sample_review_count','sample_review_avg','detail_status','detail_selection','detail_attempted','detail_refreshed_at','detail_age_days','data_sources','field_availability','detail_ok','detail_error'
 ];
 function mdTable(rows, fields) {
   if (!rows.length) return '_Bugün bu liste için yeterli karşılaştırmalı sinyal oluşmadı._';
@@ -243,8 +349,8 @@ function mdTable(rows, fields) {
   }).join(' | ')} |`).join('\n');
   return `${header}\n${body}`;
 }
-const listCols = ['bestseller_rank','rank_delta','trend_score','niche_score','product_id','title','brand','seller_name','price','original_price','price_delta_percent','stock_status','sales_signal','rating','review_count','review_delta','question_count','campaigns','delivery_summary','url'];
-const listMdFields = [['bestseller_rank','Sıra'],['rank_delta','Sıra Δ'],['trend_score','Trend'],['niche_score','Niche'],['title','Ürün'],['brand','Marka'],['seller_name','Satıcı'],['price','Fiyat TL'],['stock_status','Stok'],['rating','Puan'],['review_count','Yorum'],['question_count','Soru'],['campaigns','Kampanya']];
+const listCols = ['bestseller_rank','rank_delta','trend_score','niche_score','product_id','title','brand','seller_name','price','original_price','price_delta_percent','stock_status','sales_signal','rating','review_count','review_delta','question_count','campaigns','delivery_summary','detail_status','detail_age_days','url'];
+const listMdFields = [['bestseller_rank','Sıra'],['rank_delta','Sıra Δ'],['trend_score','Trend'],['niche_score','Niche'],['title','Ürün'],['brand','Marka'],['seller_name','Satıcı'],['price','Fiyat TL'],['stock_status','Stok'],['rating','Puan'],['review_count','Yorum'],['question_count','Soru'],['detail_status','Detay'],['detail_age_days','Yaş (gün)'],['campaigns','Kampanya']];
 const listTitles = {
   'rising.csv': 'Yükselen Ürünler', 'falling.csv': 'Düşen Ürünler', 'trending.csv': 'Trend Ürünler',
   'niche.csv': 'Niche Fırsatlar', 'campaigns.csv': 'Kampanyalı Ürünler',
@@ -281,15 +387,20 @@ function generateReport(products, date, quality) {
     ['500–1.000 TL', p=>p>=500&&p<1000], ['1.000 TL+', p=>p>=1000]
   ].map(([name,fn])=>[name, prices.filter(fn).length]);
   const firstDay = products.every(p => p.rank_delta === null);
+  const detailStrategy = Number(quality.selection?.topN || 0) >= products.length
+    ? `${products.length} ürünün tamamı günlük detay yenilemesinde.`
+    : `İlk ${quality.selection?.topN || 0} ürün günlük, ${quality.selection?.rotationN || 0} ürün dönüşümlü yenileniyor${quality.selection?.hotN ? `; ${quality.selection.hotN} hızlı değişen ürün ayrıca önceliklendirildi` : ''}.`;
   const topFields = [['bestseller_rank','Sıra'],['title','Ürün'],['price','Fiyat TL'],['seller_name','Satıcı'],['rating','Puan'],['rating_count','Değerlendirme'],['review_count','Yorum'],['question_count','Soru'],['sales_signal','Satış sinyali']];
   return `# Trendyol Çocuk En Çok Satanlar — ${date}\n\n` +
-    `> Kaynak: [Trendyol çocuk / En Çok Satan](${config.searchUrl})\n> Toplama zamanı: ${products[0]?.captured_at || '-'}\n> Ürün sayısı: ${products.length} | Detay başarısı: ${quality.detailSuccessRate}% | Kalite: **${quality.status}**\n\n` +
+    `> Kaynak: [Trendyol çocuk / En Çok Satan](${config.searchUrl})\n> Toplama zamanı: ${products[0]?.captured_at || '-'}\n> Havuz: ${products.length} ürün | Bugün detay yenilenen: ${quality.detailRefreshed}/${quality.detailAttempted} | Kalite: **${quality.status}**\n\n` +
     `## Yönetici özeti\n\n` +
     `- İzlenen ürünlerde medyan fiyat **${median(prices)?.toLocaleString('tr-TR') || '-'} TL**.\n` +
     `- En görünür markalar: ${brandCounts.map(([b,c])=>`${b} (${c})`).join(', ') || '-'}.\n` +
     `- Baskın ürün temaları: ${themes.map(([t,c])=>`${t} (${c})`).join(', ')}.\n` +
     `- Fiyat dağılımı: ${priceBands.map(([b,c])=>`${b}: ${c}`).join(', ')}.\n` +
     `- Kampanyalı ürün: **${campaigns.length}**, açık stok riski: **${stockRisk.length}**.\n` +
+    `- Detay stratejisi: ${detailStrategy}\n` +
+    `- Havuz durumu: **${quality.detailRefreshed}** bugün yenilendi, **${quality.carriedForward}** geçmiş detay taşıyor, **${quality.listingOnly}** yalnız liste sinyalleriyle izleniyor.\n` +
     `- ${firstDay ? 'Bugün baz çizgisi oluşturuldu; yükseliş/düşüş yorumu ikinci günlük ölçümden itibaren güvenilirleşecek.' : `Yükseliş sinyali ${rising.length}, düşüş sinyali ${falling.length} üründe görüldü.`}\n\n` +
     `## En çok satan ürünler\n\n${mdTable(products.slice(0,15), topFields)}\n\n` +
     `## Yükselen ürünler\n\n${mdTable(rising.slice(0,15), [['rank_delta','Sıra artışı'],['title','Ürün'],['price_delta_percent','Fiyat Δ%'],['review_delta','Yorum Δ'],['sales_signal','Satış sinyali']])}\n\n` +
@@ -306,17 +417,28 @@ function generateReport(products, date, quality) {
     `5. **Müşteri içgörüsü:** Soru ve yorum artışı, satış sinyalinden önce hızlanıyorsa yaklaşan talebin öncü göstergesi olarak izlenmelidir.\n` +
     `6. **Bugünün aksiyonu:** ${niche[0] ? `Niche testinde önce “${niche[0].title}” benzeri ürünlerin tedarik maliyeti, reklam CPC'si ve yorum bariyeri doğrulansın.` : 'İlk karşılaştırma verisi oluşana kadar küçük bütçeli ürün/anahtar kelime testleriyle talep doğrulansın.'}\n\n` +
     `## Veri kalitesi\n\n` +
-    `- Zorunlu alan kapsaması: **${quality.coreCoverage}%**\n- Detay sayfası başarısı: **${quality.detailSuccessRate}%**\n- Eksikliği yüksek alanlar: ${quality.lowCoverageFields.join(', ') || 'yok'}\n` +
+    `- ${products.length} ürünlük çekirdek alan kapsaması: **${quality.coreCoverage}%**\n- Planlanan detay denemesi: **${quality.detailAttempted}**\n- Detay sayfası başarısı: **${quality.detailSuccessRate}%**\n- Yenilenen detaylarda satıcı kapsaması: **${quality.detailCoverage?.seller_name || 0}%**\n- Yenilenen detaylarda değerlendirme kapsaması: **${quality.detailCoverage?.rating_count || 0}%**\n- Havuz genelinde eksikliği yüksek alanlar: ${quality.lowCoverageFields.join(', ') || 'yok'}\n` +
     `\n_Not: Sıralama ve görünür sinyaller Trendyol sayfasının toplama anındaki durumudur; gerçek satış adedi veya stok miktarı olarak yorumlanmamalıdır._\n`;
 }
 function qualityFor(products) {
   const fields = ['product_id','title','url','price','seller_name','stock_status','rating','rating_count','review_count','question_count','delivery_summary'];
-  const coverage = Object.fromEntries(fields.map(f => [f, products.length ? Math.round(products.filter(p => p[f] !== null && p[f] !== undefined && p[f] !== '').length / products.length * 1000) / 10 : 0]));
+  const coverageFor = rows => Object.fromEntries(fields.map(f => [f, rows.length ? Math.round(rows.filter(p => p[f] !== null && p[f] !== undefined && p[f] !== '').length / rows.length * 1000) / 10 : 0]));
+  const coverage = coverageFor(products);
+  const attempted = products.filter(p => p.detail_attempted === true);
+  const refreshed = products.filter(p => p.detail_status === 'refreshed' && p.detail_ok === true);
+  const detailCoverage = coverageFor(refreshed);
   const core = ['product_id','title','url','price'];
   const coreCoverage = Math.round(core.reduce((a,f)=>a+coverage[f],0)/core.length*10)/10;
-  const detailSuccessRate = products.length ? Math.round(products.filter(p=>p.detail_ok).length/products.length*1000)/10 : 0;
-  const status = products.length >= Number(config.minimumProducts || config.maxProducts || 100) && coreCoverage >= 95 && detailSuccessRate >= 80 && coverage.seller_name >= 80 && coverage.stock_status >= 90 && coverage.rating_count >= 80 ? 'PASS' : 'FAIL';
-  return { status, productCount: products.length, coreCoverage, detailSuccessRate, coverage, lowCoverageFields: fields.filter(f=>coverage[f]<70) };
+  const detailSuccessRate = attempted.length ? Math.round(refreshed.length/attempted.length*1000)/10 : 0;
+  const detailTarget = Math.min(products.length, Number(config.dailyFullDetailTopN || 200) + Number(config.dailyRotatingDetailN || 200));
+  const status = products.length >= Number(config.minimumProducts || config.maxProducts || 200) && coreCoverage >= 95 && attempted.length >= detailTarget && detailSuccessRate >= 80 && detailCoverage.seller_name >= 80 && coverage.stock_status >= 90 && detailCoverage.rating_count >= 80 ? 'PASS' : 'FAIL';
+  return {
+    status, productCount: products.length, coreCoverage, detailTarget,
+    detailAttempted: attempted.length, detailRefreshed: refreshed.length, detailSuccessRate,
+    carriedForward: products.filter(p=>/carried_forward/.test(p.detail_status || '')).length,
+    listingOnly: products.filter(p=>p.detail_status === 'listing_only').length,
+    coverage, detailCoverage, lowCoverageFields: fields.filter(f=>coverage[f]<70)
+  };
 }
 async function main() {
   if (!fs.existsSync(CHROME)) throw new Error(`Chrome bulunamadı: ${CHROME}`);
@@ -335,19 +457,22 @@ async function main() {
       return;
     }
     if (listed.length < Number(config.minimumProducts || config.maxProducts || 100)) throw new Error(`Liste sayfalarından yalnız ${listed.length} benzersiz ürün alındı; gereken minimum ${config.minimumProducts || config.maxProducts || 100}. Son geçerli rapor korunuyor. Sayfa özeti: ${JSON.stringify(listingResult.pageStats)}`);
-    const detailed = new Array(listed.length); let cursor = 0;
-    async function worker() { while (true) { const i = cursor++; if (i >= listed.length) return; detailed[i] = await collectDetail(context, listed[i], i); } }
-    await Promise.all(Array.from({ length: Math.max(1, config.detailConcurrency) }, worker));
     const historyFile = path.join(ROOT, 'data', 'history.csv');
     const history = readCsv(historyFile);
+    const selection = chooseDetailItems(listed, history, date);
+    const detailed = new Array(selection.items.length); let cursor = 0;
+    async function worker() { while (true) { const i = cursor++; if (i >= selection.items.length) return; detailed[i] = await collectDetail(context, selection.items[i], i); } }
+    await Promise.all(Array.from({ length: Math.max(1, config.detailConcurrency) }, worker));
+    const pooled = mergePoolProducts(listed, detailed, history, timestamp, date, selection);
     const availabilityFields = ['title','brand','seller_name','seller_score','price','original_price','campaigns','stock_status','stock_signal','rating','rating_count','review_count','question_count','delivery_summary','shipping_cost','properties'];
-    const enriched = detailed.map(p => {
-      const base = { ...p, date, captured_at: timestamp, query: config.query, sort: config.sort, data_sources: ['search_result_dom','product_detail_jsonld','product_detail_dom'] };
+    const enriched = pooled.map(p => {
+      const base = { ...p };
       base.field_availability = Object.fromEntries(availabilityFields.map(f => [f, base[f] === null || base[f] === undefined || base[f] === '' || (Array.isArray(base[f]) && !base[f].length) ? 'unavailable' : 'observed']));
       return base;
     });
     scored = scoreProducts(enriched, history, date);
     const quality = qualityFor(scored); quality.date = date; quality.generatedAt = timestamp;
+    quality.selection = { topN: selection.topN, rotationN: selection.rotationN, rotationIndex: selection.rotationIndex + 1, rotationBlocks: selection.rotationBlocks, hotN: selection.hotN };
     if (quality.status !== 'PASS') {
       console.log(JSON.stringify({ ok: false, date, quality, preservedLastValidReport: true }, null, 2));
       process.exitCode = 2;
@@ -373,7 +498,8 @@ async function main() {
     const topNiche = scored.filter(p=>(p.sales_signal_min||0)>=100&&(p.review_count??p.rating_count)!==null&&(p.review_count??p.rating_count)<2500).sort((a,b)=>b.niche_score-a.niche_score).slice(0,3);
     const telegram = [
       `📊 Trendyol Çocuk Günlük Raporu — ${date}`,
-      `✅ ${scored.length} ürün | detay ${quality.detailSuccessRate}% | kalite ${quality.status}`,
+      `✅ ${scored.length} ürünlük havuz | ${quality.detailRefreshed}/${quality.detailAttempted} detay yenilendi | kalite ${quality.status}`,
+      `♻️ İlk ${quality.selection.topN} günlük + ${quality.selection.rotationN} dönüşümlü + ${quality.selection.hotN} hızlı değişen ürün`,
       `🔥 Trend: ${topTrend.map((p,i)=>`${i+1}) ${p.title} (${p.price} TL)`).join(' | ')}`,
       `🎯 Niche: ${topNiche.map((p,i)=>`${i+1}) ${p.title}`).join(' | ') || 'Baz çizgisi oluşuyor'}`,
       `📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/reports/${date}.md`,

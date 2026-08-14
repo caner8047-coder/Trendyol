@@ -1,0 +1,10 @@
+{
+  "name": "trendyol-cocuk-trend-takip",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Trendyol çocuk araması için günlük ürün, fiyat, stok ve trend veri havuzu",
+  "scripts": {
+    "collect": "node scripts/collect.cjs",
+    "quality": "node scripts/quality_check.cjs"
+  }
+}

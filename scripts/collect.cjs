@@ -237,8 +237,29 @@ const columns = [
 function mdTable(rows, fields) {
   if (!rows.length) return '_Bugün bu liste için yeterli karşılaştırmalı sinyal oluşmadı._';
   const header = `| ${fields.map(f => f[1]).join(' | ')} |\n| ${fields.map(() => '---').join(' | ')} |`;
-  const body = rows.map(r => `| ${fields.map(([k]) => normalize(Array.isArray(r[k]) ? r[k].join('; ') : r[k] ?? '-').replace(/\|/g, '/')).join(' | ')} |`).join('\n');
+  const body = rows.map(r => `| ${fields.map(([k]) => {
+    const value = normalize(Array.isArray(r[k]) ? r[k].join('; ') : r[k] ?? '-').replace(/\|/g, '/');
+    return k === 'title' && r.url && value !== '-' ? `[${value.replace(/\]/g, '\\]')}](${r.url})` : value;
+  }).join(' | ')} |`).join('\n');
   return `${header}\n${body}`;
+}
+const listCols = ['bestseller_rank','rank_delta','trend_score','niche_score','product_id','title','brand','seller_name','price','original_price','price_delta_percent','stock_status','sales_signal','rating','review_count','review_delta','question_count','campaigns','delivery_summary','url'];
+const listMdFields = [['bestseller_rank','Sıra'],['rank_delta','Sıra Δ'],['trend_score','Trend'],['niche_score','Niche'],['title','Ürün'],['brand','Marka'],['seller_name','Satıcı'],['price','Fiyat TL'],['stock_status','Stok'],['rating','Puan'],['review_count','Yorum'],['question_count','Soru'],['campaigns','Kampanya']];
+const listTitles = {
+  'rising.csv': 'Yükselen Ürünler', 'falling.csv': 'Düşen Ürünler', 'trending.csv': 'Trend Ürünler',
+  'niche.csv': 'Niche Fırsatlar', 'campaigns.csv': 'Kampanyalı Ürünler',
+  'stock-risk.csv': 'Stok Riski', 'price-drops.csv': 'Fiyatı Düşen Ürünler'
+};
+function buildLists(scored) {
+  return {
+    'rising.csv': scored.filter(p=>(p.rank_delta||0)>0||(p.review_delta||0)>0).sort((a,b)=>(b.rank_delta||0)-(a.rank_delta||0)||(b.review_delta||0)-(a.review_delta||0)),
+    'falling.csv': scored.filter(p=>(p.rank_delta||0)<0||p.stock_status==='OutOfStock').sort((a,b)=>(a.rank_delta||0)-(b.rank_delta||0)),
+    'trending.csv': [...scored].sort((a,b)=>b.trend_score-a.trend_score),
+    'niche.csv': scored.filter(p=>(p.sales_signal_min||0)>=100&&(p.review_count??p.rating_count)!==null&&(p.review_count??p.rating_count)<2500).sort((a,b)=>b.niche_score-a.niche_score),
+    'campaigns.csv': scored.filter(p=>p.campaigns?.length||p.discount_percent).sort((a,b)=>(b.discount_percent||0)-(a.discount_percent||0)),
+    'stock-risk.csv': scored.filter(p=>p.stock_status==='OutOfStock'||/son \d+ ürün|tüken/i.test(p.stock_signal||'')),
+    'price-drops.csv': scored.filter(p=>(p.price_delta_percent||0)<0).sort((a,b)=>a.price_delta_percent-b.price_delta_percent)
+  };
 }
 function median(nums) { const a = nums.filter(Number.isFinite).sort((x,y)=>x-y); return a.length ? a[Math.floor(a.length / 2)] : null; }
 function generateReport(products, date, quality) {
@@ -338,17 +359,11 @@ async function main() {
     const oldOtherDays = history.filter(r => r.date !== date);
     writeCsv(historyFile, [...oldOtherDays, ...scored], columns);
     const listsDir = path.join(ROOT, 'lists', date); mkdir(listsDir);
-    const listCols = ['bestseller_rank','rank_delta','trend_score','niche_score','product_id','title','brand','seller_name','price','original_price','price_delta_percent','stock_status','sales_signal','rating','review_count','review_delta','question_count','campaigns','delivery_summary','url'];
-    const lists = {
-      'rising.csv': scored.filter(p=>(p.rank_delta||0)>0||(p.review_delta||0)>0).sort((a,b)=>(b.rank_delta||0)-(a.rank_delta||0)||(b.review_delta||0)-(a.review_delta||0)),
-      'falling.csv': scored.filter(p=>(p.rank_delta||0)<0||p.stock_status==='OutOfStock').sort((a,b)=>(a.rank_delta||0)-(b.rank_delta||0)),
-      'trending.csv': [...scored].sort((a,b)=>b.trend_score-a.trend_score),
-      'niche.csv': scored.filter(p=>(p.sales_signal_min||0)>=100&&(p.review_count??p.rating_count)!==null&&(p.review_count??p.rating_count)<2500).sort((a,b)=>b.niche_score-a.niche_score),
-      'campaigns.csv': scored.filter(p=>p.campaigns?.length||p.discount_percent).sort((a,b)=>(b.discount_percent||0)-(a.discount_percent||0)),
-      'stock-risk.csv': scored.filter(p=>p.stock_status==='OutOfStock'||/son \d+ ürün|tüken/i.test(p.stock_signal||'')),
-      'price-drops.csv': scored.filter(p=>(p.price_delta_percent||0)<0).sort((a,b)=>a.price_delta_percent-b.price_delta_percent)
-    };
-    for (const [name, rows] of Object.entries(lists)) writeCsv(path.join(listsDir, name), rows, listCols);
+    const lists = buildLists(scored);
+    for (const [name, rows] of Object.entries(lists)) {
+      writeCsv(path.join(listsDir, name), rows, listCols);
+      fs.writeFileSync(path.join(listsDir, name.replace(/\.csv$/, '.md')), `# ${listTitles[name]} — ${date}\n\n${mdTable(rows, listMdFields)}\n`);
+    }
     fs.writeFileSync(path.join(ROOT, 'quality', `${date}.json`), JSON.stringify(quality, null, 2) + '\n');
     fs.writeFileSync(path.join(ROOT, 'quality', 'latest.json'), JSON.stringify(quality, null, 2) + '\n');
     const report = generateReport(scored, date, quality);
@@ -370,4 +385,5 @@ async function main() {
     console.log(JSON.stringify({ ok: quality.status === 'PASS', date, quality, files: { report: `reports/${date}.md`, snapshot: `snapshots/${date}/products.csv`, lists: `lists/${date}` } }, null, 2));
   } finally { await context.close(); await browser.close(); }
 }
-main().catch(err => { console.error(err.stack || err.message); process.exit(1); });
+module.exports = { ROOT, columns, listCols, listMdFields, listTitles, buildLists, generateReport, mdTable, qualityFor, writeCsv };
+if (require.main === module) main().catch(err => { console.error(err.stack || err.message); process.exit(1); });

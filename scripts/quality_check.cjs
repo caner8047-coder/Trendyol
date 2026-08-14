@@ -10,7 +10,7 @@ for (const file of required) {
   if (!fs.existsSync(full) || fs.statSync(full).size === 0) throw new Error(`Eksik çıktı: ${file}`);
 }
 const dayList = path.join(root, 'lists', q.date);
-for (const file of ['rising.csv','falling.csv','trending.csv','niche.csv','campaigns.csv','stock-risk.csv','price-drops.csv']) {
+for (const file of ['rising.csv','falling.csv','trending.csv','niche.csv','campaigns.csv','stock-risk.csv','price-drops.csv','rising.md','falling.md','trending.md','niche.md','campaigns.md','stock-risk.md','price-drops.md']) {
   const full = path.join(dayList, file);
   if (!fs.existsSync(full) || fs.statSync(full).size === 0) throw new Error(`Eksik liste: ${file}`);
 }

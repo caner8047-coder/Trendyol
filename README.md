@@ -8,7 +8,7 @@ Her günlük çalışmada birden fazla sonuç sayfası birleştirilerek **en az 
 
 - `data/history.csv`: ürünlerin gün bazında uzun dönem geçmişi
 - `snapshots/YYYY-MM-DD/`: günlük ham JSON ve CSV görüntüsü
-- `lists/YYYY-MM-DD/`: yükselen, düşen, trend, niche, kampanya, fiyat ve stok listeleri
+- `lists/YYYY-MM-DD/`: yükselen, düşen, trend, niche, kampanya, fiyat ve stok listeleri; CSV ve ürün adları tıklanabilir Markdown sürümleri
 - `reports/YYYY-MM-DD.md`: e-ticaret ve dijital pazarlama uzmanı bakışıyla günlük rapor
 - `reports/latest.md`: son rapor
 - `reports/telegram-latest.txt`: Telegram için kısa günlük yönetici özeti

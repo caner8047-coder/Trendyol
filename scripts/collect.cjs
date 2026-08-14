@@ -87,13 +87,13 @@ function pickCampaigns(text) {
   ];
   return [...new Set(patterns.flatMap(r => [...String(text || '').matchAll(r)].map(m => normalize(m[0]))))];
 }
-function parseListingCard(raw, position, href, listingTitle, listingBrand) {
+function parseListingCard(raw, position, href, listingTitle, listingBrand, sourcePage) {
   const text = normalize(raw);
   const monies = extractMoney(raw);
   const explicitRank = firstMatch(text, /En Çok Satan\s+(\d+)\.\s*Ürün/i);
   return {
     product_id: productId(href), url: href.split('#')[0], merchant_id: merchantId(href),
-    search_position: position, bestseller_rank: position, category_rank: explicitRank ? Number(explicitRank) : null,
+    search_position: position, bestseller_rank: position, category_rank: explicitRank ? Number(explicitRank) : null, source_page: sourcePage,
     listing_title: normalize(listingTitle), listing_brand: normalize(listingBrand),
     listing_text: text, listing_price: monies.length ? monies[monies.length >= 2 ? monies.length - 2 : 0] : null,
     listing_original_price: monies.length >= 2 ? monies[monies.length - 1] : null,
@@ -116,21 +116,36 @@ async function gotoWithRetry(page, url, attempts = 3) {
   throw last;
 }
 async function collectListing(page) {
-  await gotoWithRetry(page, config.searchUrl);
-  for (let i = 0; i < 8; i++) { await page.mouse.wheel(0, 2200); await page.waitForTimeout(800); }
-  const cards = await page.locator('a[href*="-p-"]').evaluateAll(els => els.map(e => ({
-    href: e.href,
-    text: e.innerText,
-    title: e.querySelector('.prdct-desc-cntnr-name')?.textContent || e.querySelector('h2')?.innerText || e.querySelector('img[alt]')?.getAttribute('alt') || '',
-    brand: e.querySelector('.prdct-desc-cntnr-ttl')?.textContent || e.querySelector('h2 strong')?.innerText || e.querySelector('strong')?.innerText || ''
-  })));
-  const seen = new Set(); const unique = [];
-  for (const card of cards) {
-    const id = (card.href.match(/-p-(\d+)/) || [])[1];
-    if (!id || seen.has(id) || !card.text.trim() || !/Sepete Ekle/i.test(card.text)) continue;
-    seen.add(id); unique.push(card);
+  const seen = new Set(); const unique = []; const pageStats = []; let zeroStreak = 0;
+  const maxPages = Number(config.maxSearchPages || 8);
+  for (let pageNo = 1; pageNo <= maxPages && unique.length < config.maxProducts; pageNo++) {
+    const pageUrl = new URL(config.searchUrl);
+    pageUrl.searchParams.set('pi', String(pageNo));
+    await gotoWithRetry(page, pageUrl.toString());
+    for (let i = 0; i < 5; i++) { await page.mouse.wheel(0, 2200); await page.waitForTimeout(650); }
+    const cards = await page.locator('a[href*="-p-"]').evaluateAll(els => els.map(e => ({
+      href: e.href,
+      text: e.innerText,
+      title: e.querySelector('.prdct-desc-cntnr-name')?.textContent || e.querySelector('h2')?.innerText || e.querySelector('img[alt]')?.getAttribute('alt') || '',
+      brand: e.querySelector('.prdct-desc-cntnr-ttl')?.textContent || e.querySelector('h2 strong')?.innerText || e.querySelector('strong')?.innerText || ''
+    })));
+    let added = 0;
+    for (const card of cards) {
+      const id = (card.href.match(/-p-(\d+)/) || [])[1];
+      if (!id || seen.has(id) || !card.text.trim() || !/Sepete Ekle/i.test(card.text)) continue;
+      seen.add(id); unique.push({ ...card, sourcePage: pageNo }); added++;
+      if (unique.length >= config.maxProducts) break;
+    }
+    pageStats.push({ page: pageNo, cards: cards.length, added, total: unique.length, url: pageUrl.toString() });
+    if (pageNo === 1 && added < 10) throw new Error(`İlk sonuç sayfasından yalnız ${added} ürün alındı; erişim engeli olabilir.`);
+    zeroStreak = added === 0 ? zeroStreak + 1 : 0;
+    if (zeroStreak >= 3) break;
+    await sleep(added === 0 ? config.requestDelayMs * 3 : config.requestDelayMs);
   }
-  return unique.slice(0, config.maxProducts).map((c, i) => parseListingCard(c.text, i + 1, c.href, c.title, c.brand));
+  return {
+    items: unique.slice(0, config.maxProducts).map((c, i) => parseListingCard(c.text, i + 1, c.href, c.title, c.brand, c.sourcePage)),
+    pageStats
+  };
 }
 function jsonLdProduct(items) {
   for (const raw of items) {
@@ -213,7 +228,7 @@ function scoreProducts(products, history, today) {
   });
 }
 const columns = [
-  'date','captured_at','query','sort','search_position','bestseller_rank','category_rank','rank_delta','trend_score','niche_score',
+  'date','captured_at','query','sort','source_page','search_position','bestseller_rank','category_rank','rank_delta','trend_score','niche_score',
   'product_id','merchant_id','title','brand','category','url','seller_name','seller_score','price','original_price','discount_percent','price_delta_percent','currency',
   'campaigns','stock_status','stock_signal','sales_signal','sales_signal_min','rating','rating_count','review_count','review_delta','question_count',
   'basket_signal','favorite_signal','view_signal','shipping_cost','shipping_currency','handling_days_min','handling_days_max','transit_days_min','transit_days_max','delivery_summary',
@@ -247,7 +262,7 @@ function generateReport(products, date, quality) {
   const firstDay = products.every(p => p.rank_delta === null);
   const topFields = [['bestseller_rank','Sıra'],['title','Ürün'],['price','Fiyat TL'],['seller_name','Satıcı'],['rating','Puan'],['rating_count','Değerlendirme'],['review_count','Yorum'],['question_count','Soru'],['sales_signal','Satış sinyali']];
   return `# Trendyol Çocuk En Çok Satanlar — ${date}\n\n` +
-    `> Kaynak: [Trendyol çocuk / En Çok Satan](${config.searchUrl})  \n> Toplama zamanı: ${products[0]?.captured_at || '-'}  \n> Ürün sayısı: ${products.length} | Detay başarısı: ${quality.detailSuccessRate}% | Kalite: **${quality.status}**\n\n` +
+    `> Kaynak: [Trendyol çocuk / En Çok Satan](${config.searchUrl})\n> Toplama zamanı: ${products[0]?.captured_at || '-'}\n> Ürün sayısı: ${products.length} | Detay başarısı: ${quality.detailSuccessRate}% | Kalite: **${quality.status}**\n\n` +
     `## Yönetici özeti\n\n` +
     `- İzlenen ürünlerde medyan fiyat **${median(prices)?.toLocaleString('tr-TR') || '-'} TL**.\n` +
     `- En görünür markalar: ${brandCounts.map(([b,c])=>`${b} (${c})`).join(', ') || '-'}.\n` +
@@ -279,7 +294,7 @@ function qualityFor(products) {
   const core = ['product_id','title','url','price'];
   const coreCoverage = Math.round(core.reduce((a,f)=>a+coverage[f],0)/core.length*10)/10;
   const detailSuccessRate = products.length ? Math.round(products.filter(p=>p.detail_ok).length/products.length*1000)/10 : 0;
-  const status = products.length >= 10 && coreCoverage >= 95 && detailSuccessRate >= 80 && coverage.seller_name >= 80 && coverage.stock_status >= 90 && coverage.rating_count >= 80 ? 'PASS' : 'FAIL';
+  const status = products.length >= Number(config.minimumProducts || config.maxProducts || 100) && coreCoverage >= 95 && detailSuccessRate >= 80 && coverage.seller_name >= 80 && coverage.stock_status >= 90 && coverage.rating_count >= 80 ? 'PASS' : 'FAIL';
   return { status, productCount: products.length, coreCoverage, detailSuccessRate, coverage, lowCoverageFields: fields.filter(f=>coverage[f]<70) };
 }
 async function main() {
@@ -291,8 +306,14 @@ async function main() {
   let scored;
   try {
     const listingPage = await context.newPage();
-    const listed = await collectListing(listingPage); await listingPage.close();
-    if (listed.length < 10) throw new Error(`Liste sayfasından yalnız ${listed.length} ürün alındı; erişim engeli olabilir.`);
+    const listingResult = await collectListing(listingPage); await listingPage.close();
+    const listed = listingResult.items;
+    if (process.argv.includes('--listing-only')) {
+      console.log(JSON.stringify({ ok: listed.length >= Number(config.minimumProducts || config.maxProducts || 100), listingOnly: true, uniqueProducts: listed.length, pageStats: listingResult.pageStats, first: listed[0], last: listed[listed.length - 1] }, null, 2));
+      if (listed.length < Number(config.minimumProducts || config.maxProducts || 100)) process.exitCode = 2;
+      return;
+    }
+    if (listed.length < Number(config.minimumProducts || config.maxProducts || 100)) throw new Error(`Liste sayfalarından yalnız ${listed.length} benzersiz ürün alındı; gereken minimum ${config.minimumProducts || config.maxProducts || 100}. Son geçerli rapor korunuyor. Sayfa özeti: ${JSON.stringify(listingResult.pageStats)}`);
     const detailed = new Array(listed.length); let cursor = 0;
     async function worker() { while (true) { const i = cursor++; if (i >= listed.length) return; detailed[i] = await collectDetail(context, listed[i], i); } }
     await Promise.all(Array.from({ length: Math.max(1, config.detailConcurrency) }, worker));

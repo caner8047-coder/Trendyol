@@ -2,6 +2,8 @@
 
 Bu repo, Trendyol'daki `çocuk` aramasının **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur.
 
+Her günlük çalışmada birden fazla sonuç sayfası birleştirilerek **en az 100 benzersiz ürün** izlenir. 100 ürün eşiği sağlanmazsa kalite kapısı çalışmayı reddeder ve son geçerli rapor korunur.
+
 ## Üretilen çıktılar
 
 - `data/history.csv`: ürünlerin gün bazında uzun dönem geçmişi

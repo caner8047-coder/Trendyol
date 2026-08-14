@@ -1,6 +1,6 @@
 {
   "status": "PASS",
-  "productCount": 24,
+  "productCount": 100,
   "coreCoverage": 100,
   "detailSuccessRate": 100,
   "coverage": {
@@ -8,17 +8,17 @@
     "title": 100,
     "url": 100,
     "price": 100,
-    "seller_name": 95.8,
+    "seller_name": 99,
     "stock_status": 100,
-    "rating": 95.8,
-    "rating_count": 95.8,
-    "review_count": 58.3,
-    "question_count": 100,
-    "delivery_summary": 100
+    "rating": 95,
+    "rating_count": 95,
+    "review_count": 54,
+    "question_count": 97,
+    "delivery_summary": 98
   },
   "lowCoverageFields": [
     "review_count"
   ],
   "date": "2026-08-14",
-  "generatedAt": "2026-08-14T12:23:15+03:00"
+  "generatedAt": "2026-08-14T12:42:33+03:00"
 }

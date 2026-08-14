@@ -305,6 +305,12 @@ async function main() {
       return base;
     });
     scored = scoreProducts(enriched, history, date);
+    const quality = qualityFor(scored); quality.date = date; quality.generatedAt = timestamp;
+    if (quality.status !== 'PASS') {
+      console.log(JSON.stringify({ ok: false, date, quality, preservedLastValidReport: true }, null, 2));
+      process.exitCode = 2;
+      return;
+    }
     const snapshotDir = path.join(ROOT, 'snapshots', date); mkdir(snapshotDir);
     fs.writeFileSync(path.join(snapshotDir, 'products.json'), JSON.stringify(scored, null, 2) + '\n');
     writeCsv(path.join(snapshotDir, 'products.csv'), scored, columns);
@@ -322,7 +328,6 @@ async function main() {
       'price-drops.csv': scored.filter(p=>(p.price_delta_percent||0)<0).sort((a,b)=>a.price_delta_percent-b.price_delta_percent)
     };
     for (const [name, rows] of Object.entries(lists)) writeCsv(path.join(listsDir, name), rows, listCols);
-    const quality = qualityFor(scored); quality.date = date; quality.generatedAt = timestamp;
     fs.writeFileSync(path.join(ROOT, 'quality', `${date}.json`), JSON.stringify(quality, null, 2) + '\n');
     fs.writeFileSync(path.join(ROOT, 'quality', 'latest.json'), JSON.stringify(quality, null, 2) + '\n');
     const report = generateReport(scored, date, quality);
@@ -342,7 +347,6 @@ async function main() {
     fs.writeFileSync(path.join(ROOT, 'data', 'latest.json'), JSON.stringify(scored, null, 2) + '\n');
     writeCsv(path.join(ROOT, 'data', 'latest.csv'), scored, columns);
     console.log(JSON.stringify({ ok: quality.status === 'PASS', date, quality, files: { report: `reports/${date}.md`, snapshot: `snapshots/${date}/products.csv`, lists: `lists/${date}` } }, null, 2));
-    if (quality.status !== 'PASS') process.exitCode = 2;
   } finally { await context.close(); await browser.close(); }
 }
 main().catch(err => { console.error(err.stack || err.message); process.exit(1); });

@@ -202,11 +202,11 @@ function parseListingCard(raw, position, href, listingTitle, listingBrand, sourc
     detail_status: 'listing_only', detail_attempted: false, detail_ok: null
   };
 }
-async function gotoWithRetry(page, url, attempts = 3) {
+async function gotoWithRetry(page, url, attempts = 3, timeoutMs = 60000) {
   let last;
   for (let i = 0; i < attempts; i++) {
     try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
       await page.waitForTimeout(2600 + i * 1200);
       const title = await page.title();
       if (/Just a moment|Access denied|Cloudflare/i.test(title)) throw new Error(`blocked title: ${title}`);
@@ -255,7 +255,10 @@ async function collectListing(page) {
         if (unique.length >= config.maxProducts) break;
       }
       pageStats.push({ segment: segment.name, query: sourceQuery, page: pageNo, cards: cards.length, added, segmentTotal: segmentPosition, total: unique.length, url: pageUrl.toString() });
-      if (segment === segments[0] && pageNo === 1 && added < 10) throw new Error(`İlk sonuç sayfasından yalnız ${added} ürün alındı; erişim engeli olabilir.`);
+      console.log(`LISTING_PROGRESS profile=${PROFILE} segment=${segment.name} page=${pageNo} added=${added} total=${unique.length}`);
+      if (segment === segments[0] && pageNo === 1 && added < 10) {
+        console.warn(`LISTING_PRIMARY_WEAK profile=${PROFILE} added=${added}; yedek segmentlere devam ediliyor.`);
+      }
       zeroStreak = added === 0 ? zeroStreak + 1 : 0;
       if (zeroStreak >= 3) break;
       await sleep(added === 0 ? config.requestDelayMs * 3 : config.requestDelayMs);
@@ -281,7 +284,12 @@ function jsonLdProduct(items) {
 async function collectDetail(context, item, index) {
   const page = await context.newPage();
   try {
-    await gotoWithRetry(page, item.url);
+    await gotoWithRetry(
+      page,
+      item.url,
+      Number(config.detailNavigationAttempts || 1),
+      Number(config.detailNavigationTimeoutMs || 30000)
+    );
     const payload = await page.evaluate(() => ({
       body: document.body.innerText,
       jsonld: [...document.querySelectorAll('script[type="application/ld+json"]')].map(x => x.textContent),
@@ -332,7 +340,10 @@ async function collectDetail(context, item, index) {
     };
   } catch (e) {
     return { ...item, detail_status: 'failed', detail_attempted: true, detail_ok: false, detail_error: normalize(e.message).slice(0, 300) };
-  } finally { await page.close(); await sleep(config.requestDelayMs); }
+  } finally {
+    await Promise.race([page.close(), sleep(5000)]).catch(() => {});
+    await sleep(config.requestDelayMs);
+  }
 }
 function ageInDays(date, timestamp) {
   if (!timestamp) return null;
@@ -522,8 +533,20 @@ async function main() {
     const historyFile = path.join(OUTPUT_ROOT, 'data', 'history.csv');
     const history = readCsv(historyFile);
     const selection = chooseDetailItems(listed, history, date);
-    const detailed = new Array(selection.items.length); let cursor = 0;
-    async function worker() { while (true) { const i = cursor++; if (i >= selection.items.length) return; detailed[i] = await collectDetail(context, selection.items[i], i); } }
+    const detailed = new Array(selection.items.length); let cursor = 0; let completed = 0;
+    console.log(`DETAIL_START profile=${PROFILE} products=${selection.items.length} concurrency=${config.detailConcurrency}`);
+    async function worker() {
+      while (true) {
+        const i = cursor++;
+        if (i >= selection.items.length) return;
+        detailed[i] = await collectDetail(context, selection.items[i], i);
+        completed++;
+        if (completed % 10 === 0 || completed === selection.items.length) {
+          const refreshed = detailed.filter(Boolean).filter(row => row.detail_ok === true).length;
+          console.log(`DETAIL_PROGRESS profile=${PROFILE} completed=${completed}/${selection.items.length} refreshed=${refreshed}`);
+        }
+      }
+    }
     await Promise.all(Array.from({ length: Math.max(1, config.detailConcurrency) }, worker));
     const pooled = mergePoolProducts(listed, detailed, history, timestamp, date, selection);
     const availabilityFields = ['title','brand','seller_name','seller_score','price','original_price','campaigns','stock_status','stock_signal','rating','rating_count','review_count','question_count','delivery_summary','shipping_cost','properties'];

@@ -28,8 +28,10 @@
   "dailyFullDetailTopN": 200,
   "dailyRotatingDetailN": 0,
   "hotDetailLimit": 25,
-  "detailConcurrency": 2,
-  "requestDelayMs": 1800,
+  "detailConcurrency": 3,
+  "requestDelayMs": 1000,
+  "detailNavigationAttempts": 1,
+  "detailNavigationTimeoutMs": 30000,
   "timezone": "Europe/Istanbul",
   "dailyRunTime": "09:30"
 }

@@ -13,12 +13,12 @@
     "title": 100,
     "url": 100,
     "price": 100,
-    "seller_name": 100,
+    "seller_name": 94.5,
     "stock_status": 100,
-    "rating": 98.5,
-    "rating_count": 98.5,
-    "review_count": 57,
-    "question_count": 98.5,
+    "rating": 96,
+    "rating_count": 96,
+    "review_count": 57.5,
+    "question_count": 94.5,
     "delivery_summary": 100
   },
   "detailCoverage": {
@@ -26,19 +26,19 @@
     "title": 100,
     "url": 100,
     "price": 100,
-    "seller_name": 100,
+    "seller_name": 94.5,
     "stock_status": 100,
-    "rating": 98.5,
-    "rating_count": 98.5,
-    "review_count": 57,
-    "question_count": 98.5,
+    "rating": 96,
+    "rating_count": 96,
+    "review_count": 57.5,
+    "question_count": 94.5,
     "delivery_summary": 100
   },
   "lowCoverageFields": [
     "review_count"
   ],
   "date": "2026-08-17",
-  "generatedAt": "2026-08-17T01:24:14+03:00",
+  "generatedAt": "2026-08-17T02:10:10+03:00",
   "selection": {
     "topN": 200,
     "rotationN": 0,

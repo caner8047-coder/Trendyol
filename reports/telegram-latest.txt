@@ -1,7 +1,7 @@
-📊 Trendyol Çocuk Günlük Raporu — 2026-08-14
+📊 Trendyol Çocuk Günlük Raporu — 2026-08-17
 ✅ 200 ürünlük havuz | 200/200 detay yenilendi | kalite PASS
 ♻️ 200 ürünün tamamı günlük detay taramasında
-🔥 Trend: 1) Go Toys Go Magnetic Series 72 Parça Manyetik Yapı Blokları Original - Mıknatıslı Manyetik Bloklar (1865.75 TL) | 2) H&M 3’lü Pamuklu Kolsuz Üst (399.99 TL) | 3) Magly Manyetik Yapı Blokları – Çocuklar İçin Renkli 3 Boyutlu 72 Parça Manyetik Karo Oyun Seti (2196 TL)
-🎯 Niche: 1) Go Toys Kinetik Top Duyusal Oyuncak - SpinnBall Stret Oyuncak 1 Adet | 2) H&M 2'li Jogger Pantolon | 3) H&M 3’lü Pamuklu Kolsuz Üst
-📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/reports/2026-08-14.md
+🔥 Trend: 1) Go Toys Go Magnetic Series 72 Parça Manyetik Yapı Blokları Original - Mıknatıslı Manyetik Bloklar (1536.5 TL) | 2) Genel Markalar 3'lü Bebek Vakumlu Döner Topaç: Duyu Gelişimi Destekli, Serbest Kombinasyonlu ABS Hayvan Oyuncağı (599 TL) | 3) Magly Manyetik Yapı Blokları – Çocuklar İçin Renkli 3 Boyutlu 72 Parça Manyetik Karo Oyun Seti (2196 TL)
+🎯 Niche: Baz çizgisi oluşuyor
+📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/reports/2026-08-17.md
 Not: Yükselen/düşen listeleri ikinci ölçümden itibaren günlük farklarla dolacaktır.

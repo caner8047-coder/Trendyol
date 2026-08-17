@@ -1,6 +1,6 @@
 # Trendyol En Çok Satanlar Veri Havuzu
 
-Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek`, `ev-yasam` ve `kadın`.
+Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek`, `ev-yasam`, `kadın` ve `genel-cok-satanlar`.
 
 İlk aşamada her günlük çalışmada birden fazla sonuç sayfası birleştirilerek **200 benzersiz ürün** izlenir. 200 ürün eşiği sağlanmazsa kalite kapısı çalışmayı reddeder ve son geçerli rapor korunur. Yapı, sistem kararlılığı doğrulandıktan sonra ayar dosyasından yeniden 1.000 ürüne ölçeklenebilir.
 
@@ -14,6 +14,8 @@ Ana `çocuk` en çok satan akışı benzersiz ürün vermeyi bıraktığında ha
 
 `kadın` profili kadın en çok satanlar aramasını; giyim, ayakkabı, çanta-aksesuar, iç giyim ve bakım alışveriş niyetleriyle tamamlar. Çıktıları `categories/kadin/` altında tutulur ve görev diğer profillerle çakışmaması için her gün 10:30'da çalışır.
 
+`genel-cok-satanlar` profili Trendyol Çok Satanlar vitrininin 20 ana kategori sekmesinden dengeli örneklem alır; yinelenen ürünleri tekilleştirir ve gerektiğinde popüler ürünler segmentiyle 200 ürüne tamamlar. Çıktıları `categories/genel-cok-satanlar/` altında tutulur ve her gün 11:00'da çalışır.
+
 ## Üretilen çıktılar
 
 - `data/history.csv`: ürünlerin gün bazında uzun dönem geçmişi
@@ -26,6 +28,7 @@ Ana `çocuk` en çok satan akışı benzersiz ürün vermeyi bıraktığında ha
 - `categories/erkek/`: erkek profiline ait aynı `data`, `snapshots`, `lists`, `reports` ve `quality` yapısı
 - `categories/ev-yasam/`: seçili Ev & Yaşam kategori bağlantısına ait bağımsız veri havuzu ve raporlar
 - `categories/kadin/`: kadın en çok satanlar aramasına ait bağımsız veri havuzu ve raporlar
+- `categories/genel-cok-satanlar/`: genel Çok Satanlar vitrininin dengeli kategori örneklemine ait bağımsız veri havuzu ve raporlar
 
 ## İzlenen alanlar
 

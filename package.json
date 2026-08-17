@@ -8,9 +8,11 @@
     "collect:erkek": "node scripts/collect.cjs --profile erkek",
     "collect:ev-yasam": "node scripts/collect.cjs --profile ev-yasam",
     "collect:kadin": "node scripts/collect.cjs --profile kadin",
+    "collect:genel-cok-satanlar": "node scripts/collect.cjs --profile genel-cok-satanlar",
     "quality": "node scripts/quality_check.cjs",
     "quality:erkek": "node scripts/quality_check.cjs --profile erkek",
     "quality:ev-yasam": "node scripts/quality_check.cjs --profile ev-yasam",
-    "quality:kadin": "node scripts/quality_check.cjs --profile kadin"
+    "quality:kadin": "node scripts/quality_check.cjs --profile kadin",
+    "quality:genel-cok-satanlar": "node scripts/quality_check.cjs --profile genel-cok-satanlar"
   }
 }

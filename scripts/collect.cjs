@@ -178,6 +178,7 @@ function parseListingCard(raw, position, href, listingTitle, listingBrand, sourc
   const text = normalize(raw);
   const monies = extractMoney(raw);
   const explicitRank = firstMatch(text, /En Çok Satan\s+(\d+)\.\s*Ürün/i);
+  const hubRank = firstMatch(text, /^(\d+)\b/);
   const price = monies.length ? monies[monies.length >= 2 ? monies.length - 2 : 0] : null;
   const originalPrice = monies.length >= 2 ? monies[monies.length - 1] : null;
   const rating = schemaNumber(firstMatch(text, /\b([1-5][.,]\d)\s*\([\d.]+\)/));
@@ -185,7 +186,7 @@ function parseListingCard(raw, position, href, listingTitle, listingBrand, sourc
   const title = normalize(listingTitle);
   return {
     product_id: productId(href), url: href.split('#')[0], merchant_id: merchantId(href),
-    search_position: position, bestseller_rank: position, category_rank: explicitRank ? Number(explicitRank) : null,
+    search_position: position, bestseller_rank: position, category_rank: explicitRank ? Number(explicitRank) : (hubRank ? Number(hubRank) : null),
     source_segment: sourceSegment, source_query: sourceQuery, segment_position: segmentPosition, source_page: sourcePage,
     listing_title: title, listing_brand: normalize(listingBrand), title,
     brand: normalize(listingBrand || brandFromUrl(href, title)),
@@ -195,8 +196,8 @@ function parseListingCard(raw, position, href, listingTitle, listingBrand, sourc
     currency: 'TRY', rating, rating_count: ratingCount,
     stock_status: /Stokta Yok/i.test(text) ? 'OutOfStock' : 'InStock',
     stock_signal: firstMatch(text, /(son \d+ ürün|tükenmek üzere|stokta yok)/i),
-    sales_signal: firstMatch(text, /(Son\s+\d+\s+günde\s+[\d.,]+[BMK]?\+?\s+ürün\s+satıldı!?)/i),
-    sales_signal_min: compactNumber(firstMatch(text, /Son\s+\d+\s+günde\s+([\d.,]+[BMK]?\+?)/i)),
+    sales_signal: firstMatch(text, /((?:Son\s+)?\d+\s+günde\s+[\d.,]+[BMK]?\+?\s+ürün\s+satıldı!?)/i),
+    sales_signal_min: compactNumber(firstMatch(text, /(?:Son\s+)?\d+\s+günde\s+([\d.,]+[BMK]?\+?)/i)),
     campaigns: pickCampaigns(text),
     badge: firstMatch(text, /(En Çok Satan\s+\d+\.\s*Ürün|En Çok Ziyaret Edilen\s+\d+\.\s*Ürün|En Çok Favorilenen\s+\d+\.\s*Ürün|Fenomen Seçimi)/i),
     detail_status: 'listing_only', detail_attempted: false, detail_ok: null
@@ -220,46 +221,72 @@ async function collectListing(page) {
   const segments = config.searchSegments?.length ? config.searchSegments : [{ name: 'genel-cocuk', query: config.query }];
   const maxPages = Number(config.maxPagesPerSegment || 16);
   const maxConsecutiveZeroPages = Number(config.maxConsecutiveZeroPages || 3);
+  const isBestSellerHub = config.listingMode === 'bestSellerHub';
+  const requireAddToCart = config.requireAddToCart !== false;
   for (const segment of segments) {
     let zeroStreak = 0; let segmentPosition = 0;
-    for (let pageNo = 1; pageNo <= maxPages && unique.length < config.maxProducts; pageNo++) {
+    const segmentMaxPages = Number(segment.maxPages || maxPages);
+    for (let pageNo = 1; pageNo <= segmentMaxPages && unique.length < config.maxProducts; pageNo++) {
       const pageUrl = new URL(config.searchUrl);
-      const sourceQuery = segment.query || (segment.wc ? `wc=${segment.wc}` : null) || config.sourceLabel || segment.name;
+      const sourceQuery = segment.tab || segment.query || (segment.wc ? `wc=${segment.wc}` : null) || config.sourceLabel || segment.name;
       if (segment.wc) {
         pageUrl.searchParams.set('wc', segment.wc);
       } else if (!segment.preserveUrl && segment.query) {
         pageUrl.searchParams.set('q', segment.query); pageUrl.searchParams.set('qt', segment.query); pageUrl.searchParams.set('st', segment.query);
       }
-      pageUrl.searchParams.set('pi', String(pageNo));
+      if (!isBestSellerHub) pageUrl.searchParams.set('pi', String(pageNo));
       let cards = [];
       const contentAttempts = segment === segments[0] && pageNo === 1
         ? Number(config.firstPageContentAttempts || 3)
         : 1;
       for (let contentAttempt = 0; contentAttempt < contentAttempts; contentAttempt++) {
         await gotoWithRetry(page, pageUrl.toString());
-        for (let i = 0; i < 5; i++) { await page.mouse.wheel(0, 2200); await page.waitForTimeout(650); }
-        cards = await page.locator('a[href*="-p-"]').evaluateAll(els => els.map(e => ({
-          href: e.href,
-          text: e.innerText,
-          title: e.querySelector('.prdct-desc-cntnr-name')?.textContent || e.querySelector('h2')?.innerText || e.querySelector('img[alt]')?.getAttribute('alt') || '',
-          brand: e.querySelector('.prdct-desc-cntnr-ttl')?.textContent || e.querySelector('h2 strong')?.innerText || e.querySelector('strong')?.innerText || ''
-        })));
-        const usable = cards.filter(card => /-p-\d+/.test(card.href) && card.text.trim() && /Sepete Ekle/i.test(card.text)).length;
+        if (isBestSellerHub && segment.tab) {
+          const tab = page.getByRole('button', { name: segment.tab, exact: true });
+          if (await tab.count() === 0) throw new Error(`Çok Satanlar kategori sekmesi bulunamadı: ${segment.tab}`);
+          const beforeId = await page.locator('a[href*="-p-"]').first().getAttribute('href').catch(() => null);
+          await tab.first().click({ force: true });
+          await page.waitForFunction(previous => {
+            const href = document.querySelector('a[href*="-p-"]')?.getAttribute('href') || null;
+            return href && href !== previous;
+          }, beforeId, { timeout: 10000 }).catch(() => {});
+          await page.waitForTimeout(1800);
+        }
+        const scrollCount = Number(config.listingScrollCount || 5);
+        for (let i = 0; i < scrollCount; i++) { await page.mouse.wheel(0, 2200); await page.waitForTimeout(650); }
+        cards = await page.locator('a[href*="-p-"]').evaluateAll((els, hubMode) => els.map(e => {
+          const text = e.innerText;
+          const lines = text.split(/\n+/).map(line => line.trim()).filter(Boolean);
+          let hubTitle = '';
+          if (hubMode) {
+            let titleIndex = /^\d+$/.test(lines[0] || '') ? 1 : 0;
+            while (/^(?:🚀\s*)?Popüler$|^\d+\s+Sıra\s+(?:Yükseldi|Düştü)$/i.test(lines[titleIndex] || '')) titleIndex++;
+            hubTitle = lines[titleIndex] || '';
+          }
+          return {
+            href: e.href,
+            text,
+            title: hubTitle || e.querySelector('.prdct-desc-cntnr-name')?.textContent || e.querySelector('h2')?.innerText || e.querySelector('img[alt]')?.getAttribute('alt') || '',
+            brand: e.querySelector('.prdct-desc-cntnr-ttl')?.textContent || e.querySelector('h2 strong')?.innerText || e.querySelector('strong')?.innerText || ''
+          };
+        }), isBestSellerHub);
+        const usable = cards.filter(card => /-p-\d+/.test(card.href) && card.text.trim() && (!requireAddToCart || /Sepete Ekle/i.test(card.text))).length;
         if (usable >= 10 || contentAttempt === contentAttempts - 1) break;
         await sleep(15000 * (contentAttempt + 1));
       }
       let added = 0;
       for (const card of cards) {
         const id = (card.href.match(/-p-(\d+)/) || [])[1];
-        if (!id || seen.has(id) || !card.text.trim() || !/Sepete Ekle/i.test(card.text)) continue;
+        if (!id || seen.has(id) || !card.text.trim() || (requireAddToCart && !/Sepete Ekle/i.test(card.text))) continue;
         seen.add(id); segmentPosition++; unique.push({ ...card, sourcePage: pageNo, sourceSegment: segment.name, sourceQuery, segmentPosition }); added++;
-        if (unique.length >= config.maxProducts) break;
+        if (unique.length >= config.maxProducts || added >= Number(segment.limit || config.maxProducts)) break;
       }
       pageStats.push({ segment: segment.name, query: sourceQuery, page: pageNo, cards: cards.length, added, segmentTotal: segmentPosition, total: unique.length, url: pageUrl.toString() });
       console.log(`LISTING_PROGRESS profile=${PROFILE} segment=${segment.name} page=${pageNo} added=${added} total=${unique.length}`);
       if (segment === segments[0] && pageNo === 1 && added < 10) {
         console.warn(`LISTING_PRIMARY_WEAK profile=${PROFILE} added=${added}; yedek segmentlere devam ediliyor.`);
       }
+      if (added >= Number(segment.limit || config.maxProducts)) break;
       zeroStreak = added === 0 ? zeroStreak + 1 : 0;
       if (zeroStreak >= maxConsecutiveZeroPages) break;
       await sleep(added === 0 ? config.requestDelayMs * 3 : config.requestDelayMs);

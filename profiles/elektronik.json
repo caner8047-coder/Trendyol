@@ -1,0 +1,43 @@
+{
+  "profile": "elektronik",
+  "name": "Trendyol Elektronik En Çok Satanlar",
+  "reportTitle": "Trendyol Elektronik En Çok Satanlar",
+  "telegramTitle": "Trendyol Elektronik Günlük Raporu",
+  "sourceLabel": "Trendyol Elektronik / En Çok Satan",
+  "themes": [
+    { "name": "Telefon ve aksesuar", "keywords": "telefon|akıllı telefon|kılıf|ekran koruyucu|şarj|powerbank|kablo" },
+    { "name": "Bilgisayar ve çevre birimleri", "keywords": "bilgisayar|laptop|notebook|klavye|mouse|monitör|ssd|yazıcı" },
+    { "name": "Ses ve görüntü", "keywords": "kulaklık|hoparlör|soundbar|televizyon|tv|projeksiyon|mikrofon" },
+    { "name": "Oyun ve konsol", "keywords": "oyun|gaming|gamepad|konsol|playstation|xbox" },
+    { "name": "Giyilebilir teknoloji", "keywords": "akıllı saat|smart watch|akıllı bileklik|giyilebilir" },
+    { "name": "Kamera ve güvenlik", "keywords": "kamera|fotoğraf|webcam|güvenlik kamerası|araç kamerası" },
+    { "name": "Küçük ev aletleri", "keywords": "süpürge|kahve makinesi|airfryer|ütü|blender|tost makinesi" }
+  ],
+  "searchUrl": "https://www.trendyol.com/elektronik-x-c104024?sst=BEST_SELLER",
+  "query": "elektronik",
+  "sort": "BEST_SELLER",
+  "maxProducts": 200,
+  "minimumProducts": 200,
+  "maxPagesPerSegment": 20,
+  "maxConsecutiveZeroPages": 6,
+  "firstPageContentAttempts": 3,
+  "listingCacheMaxAgeMinutes": 30,
+  "searchSegments": [
+    { "name": "elektronik-vitrini", "preserveUrl": true },
+    { "name": "telefon-aksesuari", "url": "https://www.trendyol.com/sr?wc=104024&sst=BEST_SELLER", "query": "telefon aksesuarı" },
+    { "name": "bilgisayar", "url": "https://www.trendyol.com/sr?wc=104024&sst=BEST_SELLER", "query": "bilgisayar" },
+    { "name": "kulaklik-hoparlor", "url": "https://www.trendyol.com/sr?wc=104024&sst=BEST_SELLER", "query": "kulaklık hoparlör" },
+    { "name": "oyun-gaming", "url": "https://www.trendyol.com/sr?wc=104024&sst=BEST_SELLER", "query": "gaming" },
+    { "name": "giyilebilir-teknoloji", "url": "https://www.trendyol.com/sr?wc=104024&sst=BEST_SELLER", "query": "akıllı saat" },
+    { "name": "kucuk-ev-aletleri", "url": "https://www.trendyol.com/sr?wc=104024&sst=BEST_SELLER", "query": "küçük ev aletleri" }
+  ],
+  "dailyFullDetailTopN": 200,
+  "dailyRotatingDetailN": 0,
+  "hotDetailLimit": 25,
+  "detailConcurrency": 3,
+  "requestDelayMs": 1000,
+  "detailNavigationAttempts": 1,
+  "detailNavigationTimeoutMs": 30000,
+  "timezone": "Europe/Istanbul",
+  "dailyRunTime": "12:30"
+}

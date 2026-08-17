@@ -1,0 +1,43 @@
+{
+  "profile": "kozmetik",
+  "name": "Trendyol Kozmetik En Çok Satanlar",
+  "reportTitle": "Trendyol Kozmetik En Çok Satanlar",
+  "telegramTitle": "Trendyol Kozmetik Günlük Raporu",
+  "sourceLabel": "Trendyol Kozmetik / En Çok Satan Ürünler",
+  "themes": [
+    { "name": "Cilt bakımı", "keywords": "serum|krem|nemlendirici|tonik|peeling|maske|temizleme|cilt" },
+    { "name": "Makyaj", "keywords": "ruj|fondöten|maskara|rimel|allık|far|eyeliner|kapatıcı|makyaj" },
+    { "name": "Saç bakımı", "keywords": "şampuan|saç kremi|saç serumu|saç yağı|keratin|saç bakım" },
+    { "name": "Parfüm ve deodorant", "keywords": "parfüm|deodorant|body mist|vücut spreyi|kolonya" },
+    { "name": "Kişisel bakım", "keywords": "duş|sabun|diş|ağız|hijyen|epilasyon|tıraş|bakım" },
+    { "name": "Güneş bakımı", "keywords": "güneş kremi|spf|güneş koruyucu|bronzlaştırıcı" },
+    { "name": "Tırnak ve el bakımı", "keywords": "oje|tırnak|manikür|el kremi" }
+  ],
+  "searchUrl": "https://www.trendyol.com/kozmetik-x-c89?fl=encoksatanurunler",
+  "query": "kozmetik",
+  "sort": "BEST_SELLER",
+  "maxProducts": 200,
+  "minimumProducts": 200,
+  "maxPagesPerSegment": 20,
+  "maxConsecutiveZeroPages": 6,
+  "firstPageContentAttempts": 3,
+  "listingCacheMaxAgeMinutes": 30,
+  "searchSegments": [
+    { "name": "kozmetik-vitrini", "preserveUrl": true },
+    { "name": "makyaj", "url": "https://www.trendyol.com/sr?wc=89&sst=BEST_SELLER", "query": "makyaj" },
+    { "name": "cilt-bakimi", "url": "https://www.trendyol.com/sr?wc=89&sst=BEST_SELLER", "query": "cilt bakımı" },
+    { "name": "sac-bakimi", "url": "https://www.trendyol.com/sr?wc=89&sst=BEST_SELLER", "query": "saç bakımı" },
+    { "name": "parfum", "url": "https://www.trendyol.com/sr?wc=89&sst=BEST_SELLER", "query": "parfüm" },
+    { "name": "kisisel-bakim", "url": "https://www.trendyol.com/sr?wc=89&sst=BEST_SELLER", "query": "kişisel bakım" },
+    { "name": "gunes-bakimi", "url": "https://www.trendyol.com/sr?wc=89&sst=BEST_SELLER", "query": "güneş bakımı" }
+  ],
+  "dailyFullDetailTopN": 200,
+  "dailyRotatingDetailN": 0,
+  "hotDetailLimit": 25,
+  "detailConcurrency": 3,
+  "requestDelayMs": 1000,
+  "detailNavigationAttempts": 1,
+  "detailNavigationTimeoutMs": 30000,
+  "timezone": "Europe/Istanbul",
+  "dailyRunTime": "12:00"
+}

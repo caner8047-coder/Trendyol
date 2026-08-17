@@ -227,7 +227,7 @@ async function collectListing(page) {
     let zeroStreak = 0; let segmentPosition = 0;
     const segmentMaxPages = Number(segment.maxPages || maxPages);
     for (let pageNo = 1; pageNo <= segmentMaxPages && unique.length < config.maxProducts; pageNo++) {
-      const pageUrl = new URL(config.searchUrl);
+      const pageUrl = new URL(segment.url || config.searchUrl);
       const sourceQuery = segment.tab || segment.query || (segment.wc ? `wc=${segment.wc}` : null) || (segment.bu ? `bu=${segment.bu}` : null) || config.sourceLabel || segment.name;
       if (segment.wc) {
         pageUrl.searchParams.set('wc', segment.wc);

@@ -10,11 +10,13 @@
     "collect:kadin": "node scripts/collect.cjs --profile kadin",
     "collect:genel-cok-satanlar": "node scripts/collect.cjs --profile genel-cok-satanlar",
     "collect:supermarket": "node scripts/collect.cjs --profile supermarket",
+    "collect:kozmetik": "node scripts/collect.cjs --profile kozmetik",
     "quality": "node scripts/quality_check.cjs",
     "quality:erkek": "node scripts/quality_check.cjs --profile erkek",
     "quality:ev-yasam": "node scripts/quality_check.cjs --profile ev-yasam",
     "quality:kadin": "node scripts/quality_check.cjs --profile kadin",
     "quality:genel-cok-satanlar": "node scripts/quality_check.cjs --profile genel-cok-satanlar",
-    "quality:supermarket": "node scripts/quality_check.cjs --profile supermarket"
+    "quality:supermarket": "node scripts/quality_check.cjs --profile supermarket",
+    "quality:kozmetik": "node scripts/quality_check.cjs --profile kozmetik"
   }
 }

@@ -1,6 +1,6 @@
 # Trendyol En Çok Satanlar Veri Havuzu
 
-Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek`, `ev-yasam`, `kadın`, `genel-cok-satanlar` ve `supermarket`.
+Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek`, `ev-yasam`, `kadın`, `genel-cok-satanlar`, `supermarket` ve `kozmetik`.
 
 İlk aşamada her günlük çalışmada birden fazla sonuç sayfası birleştirilerek **200 benzersiz ürün** izlenir. 200 ürün eşiği sağlanmazsa kalite kapısı çalışmayı reddeder ve son geçerli rapor korunur. Yapı, sistem kararlılığı doğrulandıktan sonra ayar dosyasından yeniden 1.000 ürüne ölçeklenebilir.
 
@@ -18,6 +18,8 @@ Ana `çocuk` en çok satan akışı benzersiz ürün vermeyi bıraktığında ha
 
 `supermarket` profili kullanıcı tarafından verilen iki `wc` ve yedi `bu` filtresini ana kaynakta birlikte korur; gerektiğinde aynı filtreleri tek tek tarayarak 200 benzersiz ürüne tamamlar. Çıktıları `categories/supermarket/` altında tutulur ve her gün 11:30'da çalışır.
 
+`kozmetik` profili kullanıcı tarafından verilen Kozmetik “En Çok Satan Ürünler” vitriniyle başlar; gerektiğinde yalnız `wc=89` kozmetik kapsamındaki alt alışveriş niyetleriyle 200 ürüne tamamlar. Çıktıları `categories/kozmetik/` altında tutulur ve her gün 12:00'da çalışır.
+
 ## Üretilen çıktılar
 
 - `data/history.csv`: ürünlerin gün bazında uzun dönem geçmişi
@@ -32,6 +34,7 @@ Ana `çocuk` en çok satan akışı benzersiz ürün vermeyi bıraktığında ha
 - `categories/kadin/`: kadın en çok satanlar aramasına ait bağımsız veri havuzu ve raporlar
 - `categories/genel-cok-satanlar/`: genel Çok Satanlar vitrininin dengeli kategori örneklemine ait bağımsız veri havuzu ve raporlar
 - `categories/supermarket/`: seçili Süpermarket filtrelerine ait bağımsız veri havuzu ve raporlar
+- `categories/kozmetik/`: Kozmetik En Çok Satan Ürünler filtresine ait bağımsız veri havuzu ve raporlar
 
 ## İzlenen alanlar
 

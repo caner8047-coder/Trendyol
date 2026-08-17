@@ -1,6 +1,6 @@
 # Trendyol En Çok Satanlar Veri Havuzu
 
-Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek` ve `ev-yasam`.
+Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek`, `ev-yasam` ve `kadın`.
 
 İlk aşamada her günlük çalışmada birden fazla sonuç sayfası birleştirilerek **200 benzersiz ürün** izlenir. 200 ürün eşiği sağlanmazsa kalite kapısı çalışmayı reddeder ve son geçerli rapor korunur. Yapı, sistem kararlılığı doğrulandıktan sonra ayar dosyasından yeniden 1.000 ürüne ölçeklenebilir.
 
@@ -11,6 +11,8 @@ Ana `çocuk` en çok satan akışı benzersiz ürün vermeyi bıraktığında ha
 `erkek` profili aynı kalite ve veri şemasını kullanır; çıktıları `categories/erkek/` altında çocuk veri havuzundan tamamen ayrı tutulur. Çocuk görevi her gün 09:00'da, erkek görevi çakışmayı önlemek için 09:30'da çalışır.
 
 `ev-yasam` profili, kullanıcı tarafından verilen çoklu `wc` kategori URL'sini ana kaynak olarak izler; birleşik sayfa tekrar ettiğinde yalnız aynı URL'deki kategori kimlikleri tek tek taranır. Halı, kilim, ev tekstili, dekorasyon, ev gereçleri, banyo, perde, sofra-mutfak ve mobilya gibi seçili kategorileri kapsar. Çıktıları `categories/ev-yasam/` altında tutulur ve görev her gün 10:00'da çalışır.
+
+`kadın` profili kadın en çok satanlar aramasını; giyim, ayakkabı, çanta-aksesuar, iç giyim ve bakım alışveriş niyetleriyle tamamlar. Çıktıları `categories/kadin/` altında tutulur ve görev diğer profillerle çakışmaması için her gün 10:30'da çalışır.
 
 ## Üretilen çıktılar
 
@@ -23,6 +25,7 @@ Ana `çocuk` en çok satan akışı benzersiz ürün vermeyi bıraktığında ha
 - `quality/latest.json`: veri kapsamı ve kalite kapısı sonucu
 - `categories/erkek/`: erkek profiline ait aynı `data`, `snapshots`, `lists`, `reports` ve `quality` yapısı
 - `categories/ev-yasam/`: seçili Ev & Yaşam kategori bağlantısına ait bağımsız veri havuzu ve raporlar
+- `categories/kadin/`: kadın en çok satanlar aramasına ait bağımsız veri havuzu ve raporlar
 
 ## İzlenen alanlar
 

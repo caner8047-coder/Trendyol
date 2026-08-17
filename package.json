@@ -7,8 +7,10 @@
     "collect": "node scripts/collect.cjs",
     "collect:erkek": "node scripts/collect.cjs --profile erkek",
     "collect:ev-yasam": "node scripts/collect.cjs --profile ev-yasam",
+    "collect:kadin": "node scripts/collect.cjs --profile kadin",
     "quality": "node scripts/quality_check.cjs",
     "quality:erkek": "node scripts/quality_check.cjs --profile erkek",
-    "quality:ev-yasam": "node scripts/quality_check.cjs --profile ev-yasam"
+    "quality:ev-yasam": "node scripts/quality_check.cjs --profile ev-yasam",
+    "quality:kadin": "node scripts/quality_check.cjs --profile kadin"
   }
 }

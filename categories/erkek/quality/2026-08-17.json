@@ -17,9 +17,9 @@
     "stock_status": 100,
     "rating": 99,
     "rating_count": 99,
-    "review_count": 65,
-    "question_count": 99.5,
-    "delivery_summary": 100
+    "review_count": 68,
+    "question_count": 99,
+    "delivery_summary": 99.5
   },
   "detailCoverage": {
     "product_id": 100,
@@ -30,15 +30,15 @@
     "stock_status": 100,
     "rating": 99,
     "rating_count": 99,
-    "review_count": 65,
-    "question_count": 99.5,
-    "delivery_summary": 100
+    "review_count": 68,
+    "question_count": 99,
+    "delivery_summary": 99.5
   },
   "lowCoverageFields": [
     "review_count"
   ],
   "date": "2026-08-17",
-  "generatedAt": "2026-08-17T01:32:22+03:00",
+  "generatedAt": "2026-08-17T09:30:07+03:00",
   "selection": {
     "topN": 200,
     "rotationN": 0,

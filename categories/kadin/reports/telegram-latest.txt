@@ -1,7 +1,7 @@
 📊 Trendyol Kadın Günlük Raporu — 2026-08-17
 ✅ 200 ürünlük havuz | 200/200 detay yenilendi | kalite PASS
 ♻️ 200 ürünün tamamı günlük detay taramasında
-🔥 Trend: 1) gloceans feel the glow Peptide Complex & Keratin Saç Dökülmesine Karşı Sağlıklı Saç Uzatan Onarıcı Besleyici Şampuan (356.92 TL) | 2) Mad Parfüm Mad H105 Selective 50 ml Kadın Parfüm (379.99 TL) | 3) Mad Parfüm Mad H105 Selective 100 ml Kadın Parfüm (549.99 TL)
-🎯 Niche: 1) Wega Moda Yazlık Şık Kadın Asimetrik Transparan Dökümlü Triko Pelerin Panço - Ekru | 2) WOU World of Unique Wou Ter Önleyici Leke Karşıtı Roll-On 75 ml Women | 3) Defacto Relax Fit Beli Lastikli Bağcıklı Bermuda Şort E9686AX25SM
+🔥 Trend: 1) Mad Parfüm Mad H105 Selective 50 ml Kadın Parfüm (379.99 TL) | 2) Mad Parfüm Mad H105 Selective 100 ml Kadın Parfüm (549.99 TL) | 3) Bargello 444 KADIN 50 ml PARFÜM EDP ORIENTAL (370 TL)
+🎯 Niche: 1) Wega Moda Yazlık Şık Kadın Asimetrik Transparan Dökümlü Triko Pelerin Panço - Ekru | 2) Defacto Relax Fit Beli Lastikli Bağcıklı Bermuda Şort E9686AX25SM | 3) Mad Parfüm Mad P104 Selective 50 ml Kadın Parfüm
 📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/kadin/reports/2026-08-17.md
 Not: Yükselen/düşen listeleri ikinci ölçümden itibaren günlük farklarla dolacaktır.

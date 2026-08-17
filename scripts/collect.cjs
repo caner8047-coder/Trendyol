@@ -228,10 +228,14 @@ async function collectListing(page) {
     const segmentMaxPages = Number(segment.maxPages || maxPages);
     for (let pageNo = 1; pageNo <= segmentMaxPages && unique.length < config.maxProducts; pageNo++) {
       const pageUrl = new URL(config.searchUrl);
-      const sourceQuery = segment.tab || segment.query || (segment.wc ? `wc=${segment.wc}` : null) || config.sourceLabel || segment.name;
+      const sourceQuery = segment.tab || segment.query || (segment.wc ? `wc=${segment.wc}` : null) || (segment.bu ? `bu=${segment.bu}` : null) || config.sourceLabel || segment.name;
       if (segment.wc) {
         pageUrl.searchParams.set('wc', segment.wc);
-      } else if (!segment.preserveUrl && segment.query) {
+      }
+      if (segment.bu) {
+        pageUrl.searchParams.set('bu', segment.bu);
+      }
+      if (!segment.wc && !segment.bu && !segment.preserveUrl && segment.query) {
         pageUrl.searchParams.set('q', segment.query); pageUrl.searchParams.set('qt', segment.query); pageUrl.searchParams.set('st', segment.query);
       }
       if (!isBestSellerHub) pageUrl.searchParams.set('pi', String(pageNo));

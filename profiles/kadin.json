@@ -18,6 +18,7 @@
   "maxProducts": 200,
   "minimumProducts": 200,
   "maxPagesPerSegment": 20,
+  "maxConsecutiveZeroPages": 6,
   "searchSegments": [
     { "name": "genel-kadin", "query": "kadin" },
     { "name": "kadin-giyim", "query": "kadın giyim" },

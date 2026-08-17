@@ -219,6 +219,7 @@ async function collectListing(page) {
   const seen = new Set(); const unique = []; const pageStats = [];
   const segments = config.searchSegments?.length ? config.searchSegments : [{ name: 'genel-cocuk', query: config.query }];
   const maxPages = Number(config.maxPagesPerSegment || 16);
+  const maxConsecutiveZeroPages = Number(config.maxConsecutiveZeroPages || 3);
   for (const segment of segments) {
     let zeroStreak = 0; let segmentPosition = 0;
     for (let pageNo = 1; pageNo <= maxPages && unique.length < config.maxProducts; pageNo++) {
@@ -260,7 +261,7 @@ async function collectListing(page) {
         console.warn(`LISTING_PRIMARY_WEAK profile=${PROFILE} added=${added}; yedek segmentlere devam ediliyor.`);
       }
       zeroStreak = added === 0 ? zeroStreak + 1 : 0;
-      if (zeroStreak >= 3) break;
+      if (zeroStreak >= maxConsecutiveZeroPages) break;
       await sleep(added === 0 ? config.requestDelayMs * 3 : config.requestDelayMs);
     }
     if (unique.length >= config.maxProducts) break;

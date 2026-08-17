@@ -1,7 +1,7 @@
 📊 Trendyol Süpermarket Günlük Raporu — 2026-08-17
 ✅ 200 ürünlük havuz | 200/200 detay yenilendi | kalite PASS
 ♻️ 200 ürünün tamamı günlük detay taramasında
-🔥 Trend: 1) icollagen Kolajen Ve Prebiyotik Tablet (350 TL) | 2) MOMORDİCA Coconut Mix - 250 ml (279 TL) | 3) HARMANA Hindiba Kahvesi 1 Aylık - (60 Kullanım) Net 150gr (455.05 TL)
-🎯 Niche: 1) HARMANA Karnıyarık Otu Tozu 150 Gr | 2) Pakhane Çamaşır Ve Yüzey İçin Çok Amaçlı %100 DoğalToz Leke Çıkarıcı ve Beyazlatıcı | 3) MOMORDİCA Karnıyarık Otu Mix - 250ml
+🔥 Trend: 1) icollagen Kolajen Ve Prebiyotik Tablet (350 TL) | 2) MOMORDİCA Coconut Mix - 250 ml (279 TL) | 3) Nilem Sihirli Muhteşem Sıvı 1 L (199.9 TL)
+🎯 Niche: 1) Sibelon Professionel Kağıt Tırnak Törpü 100/180 1 Adet | 2) Master Lashes 100/180 Çift Taraflı Kağıt Törpü Profesyonel Törpü Kalıcı Oje Protez Tırnak (1 Adet) | 3) Miss ÇAMAŞIR DETERJANI ARAP SABUNU ETKİLİ 3 ADET
 📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/supermarket/reports/2026-08-17.md
 Not: Yükselen/düşen listeleri ikinci ölçümden itibaren günlük farklarla dolacaktır.

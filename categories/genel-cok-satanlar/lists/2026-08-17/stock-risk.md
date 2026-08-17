@@ -1,0 +1,10 @@
+# Stok Riski — 2026-08-17
+
+| Sıra | Sıra Δ | Trend | Niche | Ürün | Marka | Satıcı | Fiyat TL | Stok | Puan | Yorum | Soru | Detay | Yaş (gün) | Kampanya |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 64 | - | 29.7 | 17.8 | [İZCE MODA Kadın. topuklu sivri bilekten bağlayan siyah rugan](https://www.trendyol.com/izce-moda/kadin-topuklu-sivri-bilekten-baglayan-siyah-rugan-p-1075046034) | İZCE MODA | MADAM RENK Women Shoes | 498.9 | InStock | 3.8 | - | 347 | refreshed |  | Kargo Bedava |
+| 66 | - | 47.3 | 12.9 | [Bershka Retro spor ayakkabı](https://www.trendyol.com/bershka/retro-spor-ayakkabi-p-1044145165) | Bershka | BERSHKA | 1250 | InStock | 4.1 | 138 | - | refreshed |  | Son 10 Günün En Düşük Fiyatı; Peşin Fiyatına 3 Taksit |
+| 68 | - | 10 | - | [Puma Anzarun Lite Unisex Günlük Ayakkabı Renkli](https://www.trendyol.com/puma/anzarun-lite-unisex-gunluk-ayakkabi-renkli-p-1090842749) | Puma | Korayspor | 1709.91 | InStock | - | - | - | refreshed |  | Sepette %10 İndirim; Kargo Bedava; Peşin Fiyatına 3 Taksit |
+| 112 | - | 42.3 | 25.7 | [Decathlon Yüzücü Gözlüğü - Standart Boy - Gri - Şeffaf Camlar - Ready](https://www.trendyol.com/decathlon/yuzucu-gozlugu-standart-boy-gri-seffaf-camlar-ready-p-1104997210) | Decathlon | paşabey | 319 | InStock | 4.6 | 4592 | 2164 | refreshed |  | Son 10 Günün En Düşük Fiyatı; 20 TL Kupon; Kargo Bedava; Son 10 günün en düşük fiyatı |
+| 142 | - | 8.3 | 21.7 | [Velovis Mantar Ev Bahçe Heykeli](https://www.trendyol.com/velovis/mantar-ev-bahce-heykeli-p-118648248) | Velovis | Zeydude Dekor | 1699 | InStock | 4.2 | 10 | 6 | refreshed |  | Kargo Bedava; Peşin Fiyatına 3 Taksit; Son 10 Günün En Düşük Fiyatı; Trendyol Plus'a Özel |
+| 186 | - | 5.3 | 26.2 | [İMEXTECH 4K Çantalı Dijital Retro Video Kamera 48MP 16X Zoom Işıklı (+32GB Kart Hediye) Fotoğraf Makinesi](https://www.trendyol.com/imextech/4k-cantali-dijital-retro-video-kamera-48mp-16x-zoom-isikli-32gb-kart-hediye-fotograf-makinesi-p-1162337246) | İMEXTECH | Serreha | 3200 | InStock | 3 | 2 | 12 | refreshed |  | Kargo Bedava; Peşin Fiyatına 3 Taksit |

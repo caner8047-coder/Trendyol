@@ -1,6 +1,6 @@
 # Trendyol En Çok Satanlar Veri Havuzu
 
-Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek`, `ev-yasam`, `kadın`, `genel-cok-satanlar`, `supermarket`, `kozmetik` ve `elektronik`.
+Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek`, `ev-yasam`, `kadın`, `genel-cok-satanlar`, `supermarket`, `kozmetik`, `elektronik` ve `mobilya`.
 
 İlk aşamada her günlük çalışmada birden fazla sonuç sayfası birleştirilerek **200 benzersiz ürün** izlenir. 200 ürün eşiği sağlanmazsa kalite kapısı çalışmayı reddeder ve son geçerli rapor korunur. Yapı, sistem kararlılığı doğrulandıktan sonra ayar dosyasından yeniden 1.000 ürüne ölçeklenebilir.
 
@@ -22,6 +22,8 @@ Ana `çocuk` en çok satan akışı benzersiz ürün vermeyi bıraktığında ha
 
 `elektronik` profili kullanıcı tarafından verilen Elektronik `BEST_SELLER` vitriniyle başlar; gerektiğinde yalnız `wc=104024` elektronik kapsamındaki alt alışveriş niyetleriyle 200 ürüne tamamlar. Çıktıları `categories/elektronik/` altında tutulur ve her gün 12:30'da çalışır.
 
+`mobilya` profili kullanıcı tarafından verilen Mobilya Çok Satanlar vitriniyle başlar; gerektiğinde yalnız `wc=104489` mobilya kapsamındaki alt alışveriş niyetleriyle 200 ürüne tamamlar. Çıktıları `categories/mobilya/` altında tutulur ve her gün 13:00'da çalışır.
+
 ## Üretilen çıktılar
 
 - `data/history.csv`: ürünlerin gün bazında uzun dönem geçmişi
@@ -38,6 +40,7 @@ Ana `çocuk` en çok satan akışı benzersiz ürün vermeyi bıraktığında ha
 - `categories/supermarket/`: seçili Süpermarket filtrelerine ait bağımsız veri havuzu ve raporlar
 - `categories/kozmetik/`: Kozmetik En Çok Satan Ürünler filtresine ait bağımsız veri havuzu ve raporlar
 - `categories/elektronik/`: Elektronik BEST_SELLER sıralamasına ait bağımsız veri havuzu ve raporlar
+- `categories/mobilya/`: Mobilya Çok Satanlar sıralamasına ait bağımsız veri havuzu ve raporlar
 
 ## İzlenen alanlar
 

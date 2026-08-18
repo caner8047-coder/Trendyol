@@ -258,6 +258,7 @@ async function collectListing(page) {
         }
         const scrollCount = Number(config.listingScrollCount || 5);
         for (let i = 0; i < scrollCount; i++) { await page.mouse.wheel(0, 2200); await page.waitForTimeout(650); }
+        const useHubCardTitles = isBestSellerHub || pageUrl.pathname === '/cok-satanlar';
         cards = await page.locator('a[href*="-p-"]').evaluateAll((els, hubMode) => els.map(e => {
           const text = e.innerText;
           const lines = text.split(/\n+/).map(line => line.trim()).filter(Boolean);
@@ -273,7 +274,7 @@ async function collectListing(page) {
             title: hubTitle || e.querySelector('.prdct-desc-cntnr-name')?.textContent || e.querySelector('h2')?.innerText || e.querySelector('img[alt]')?.getAttribute('alt') || '',
             brand: e.querySelector('.prdct-desc-cntnr-ttl')?.textContent || e.querySelector('h2 strong')?.innerText || e.querySelector('strong')?.innerText || ''
           };
-        }), isBestSellerHub);
+        }), useHubCardTitles);
         const usable = cards.filter(card => /-p-\d+/.test(card.href) && card.text.trim() && (!requireAddToCart || /Sepete Ekle/i.test(card.text))).length;
         if (usable >= 10 || contentAttempt === contentAttempts - 1) break;
         await sleep(15000 * (contentAttempt + 1));

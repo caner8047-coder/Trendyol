@@ -12,6 +12,7 @@
     "collect:supermarket": "node scripts/collect.cjs --profile supermarket",
     "collect:kozmetik": "node scripts/collect.cjs --profile kozmetik",
     "collect:elektronik": "node scripts/collect.cjs --profile elektronik",
+    "collect:mobilya": "node scripts/collect.cjs --profile mobilya",
     "quality": "node scripts/quality_check.cjs",
     "quality:erkek": "node scripts/quality_check.cjs --profile erkek",
     "quality:ev-yasam": "node scripts/quality_check.cjs --profile ev-yasam",
@@ -19,6 +20,7 @@
     "quality:genel-cok-satanlar": "node scripts/quality_check.cjs --profile genel-cok-satanlar",
     "quality:supermarket": "node scripts/quality_check.cjs --profile supermarket",
     "quality:kozmetik": "node scripts/quality_check.cjs --profile kozmetik",
-    "quality:elektronik": "node scripts/quality_check.cjs --profile elektronik"
+    "quality:elektronik": "node scripts/quality_check.cjs --profile elektronik",
+    "quality:mobilya": "node scripts/quality_check.cjs --profile mobilya"
   }
 }

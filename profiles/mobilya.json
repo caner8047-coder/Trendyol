@@ -20,6 +20,7 @@
   "listingScrollCount": 5,
   "maxProducts": 200,
   "minimumProducts": 200,
+  "minimumRatingCountCoverage": 50,
   "maxPagesPerSegment": 20,
   "maxConsecutiveZeroPages": 3,
   "firstPageContentAttempts": 3,

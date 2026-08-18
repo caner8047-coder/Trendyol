@@ -519,13 +519,15 @@ function qualityFor(products) {
   const coreCoverage = Math.round(core.reduce((a,f)=>a+coverage[f],0)/core.length*10)/10;
   const detailSuccessRate = attempted.length ? Math.round(refreshed.length/attempted.length*1000)/10 : 0;
   const detailTarget = Math.min(products.length, Number(config.dailyFullDetailTopN || 200) + Number(config.dailyRotatingDetailN || 200));
-  const status = products.length >= Number(config.minimumProducts || config.maxProducts || 200) && coreCoverage >= 95 && attempted.length >= detailTarget && detailSuccessRate >= 80 && detailCoverage.seller_name >= 80 && coverage.stock_status >= 90 && detailCoverage.rating_count >= 80 ? 'PASS' : 'FAIL';
+  const minimumRatingCountCoverage = Number(config.minimumRatingCountCoverage ?? 80);
+  const status = products.length >= Number(config.minimumProducts || config.maxProducts || 200) && coreCoverage >= 95 && attempted.length >= detailTarget && detailSuccessRate >= 80 && detailCoverage.seller_name >= 80 && coverage.stock_status >= 90 && detailCoverage.rating_count >= minimumRatingCountCoverage ? 'PASS' : 'FAIL';
   return {
     status, productCount: products.length, coreCoverage, detailTarget,
     detailAttempted: attempted.length, detailRefreshed: refreshed.length, detailSuccessRate,
     carriedForward: products.filter(p=>/carried_forward/.test(p.detail_status || '')).length,
     listingOnly: products.filter(p=>p.detail_status === 'listing_only').length,
-    coverage, detailCoverage, lowCoverageFields: fields.filter(f=>coverage[f]<70)
+    coverage, detailCoverage, lowCoverageFields: fields.filter(f=>coverage[f]<70),
+    thresholds: { minimumRatingCountCoverage }
   };
 }
 async function main() {

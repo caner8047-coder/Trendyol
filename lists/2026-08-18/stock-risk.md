@@ -1,0 +1,9 @@
+# Stok Riski — 2026-08-18
+
+| Sıra | Sıra Δ | Trend | Niche | Ürün | Marka | Satıcı | Fiyat TL | Stok | Puan | Yorum | Soru | Detay | Yaş (gün) | Kampanya |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 101 | - | 16.6 | 13.4 | [Defacto %100 Pamuk Relax Fit Bisiklet Yaka Baskılı Kısa Kollu Tişört Kız Çocuk E0355A825SM](https://www.trendyol.com/defacto/100-pamuk-relax-fit-bisiklet-yaka-baskili-kisa-kollu-tisort-kiz-cocuk-e0355a825sm-p-930461733?boutiqueId=61&merchantId=349369) | Defacto | MarkaMola | 391.99 | InStock | 4.5 | - | 2 | refreshed |  | Kargo Bedava |
+| 116 | - | 17.3 | 12.7 | [N'drops Ortopedik Çocuk Işıklı Tekerlekli Sneaker](https://www.trendyol.com/n-drops/ortopedik-cocuk-isikli-tekerlekli-sneaker-p-1137366190?boutiqueId=61&merchantId=1052319) | N'drops Ortopedik | E-MARKETT | 1680 | InStock | 4.2 | - | 59 | refreshed |  | Kargo Bedava; Peşin Fiyatına 3 Taksit |
+| 138 | - | 26 | 4 | [Genel Markalar Kız Çocuk Fiyonklu Babet Ayakkabı TAM KALIP](https://www.trendyol.com/genel-markalar/kiz-cocuk-fiyonklu-babet-ayakkabi-tam-kalip-p-686514804?boutiqueId=61&merchantId=358557) | Genel Markalar | Welissa | 545 | InStock | 4.5 | - | 701 | refreshed |  | Kargo Bedava |
+| 142 | - | 15.1 | 14.9 | [HOPFRÖG Hopfrög Multi Gri Mix Barefoot Çocuk Ayakkabı](https://www.trendyol.com/hopfrog/hopfrog-multi-gri-mix-barefoot-cocuk-ayakkabi-p-311930002?boutiqueId=61&merchantId=873060) | HOPFRÖG | STORIA | 1290 | InStock | 4.2 | - | 22 | refreshed |  | Kargo Bedava; Peşin Fiyatına 3 Taksit |
+| 146 | - | 26.1 | 5.9 | [Genel Markalar Erkek Çocuk Polo Yaka Kısa Kol Okul T-shirt Beyaz](https://www.trendyol.com/genel-markalar/erkek-cocuk-polo-yaka-kisa-kol-okul-t-shirt-beyaz-p-123276089?boutiqueId=61&merchantId=914587) | Genel Markalar | getcrazy | 240.1 | InStock | 4.1 | - | 117 | refreshed |  | Sepette %2 İndirim; Kargo Bedava |

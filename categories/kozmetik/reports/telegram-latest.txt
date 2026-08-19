@@ -1,7 +1,7 @@
-📊 Trendyol Kozmetik Günlük Raporu — 2026-08-18
+📊 Trendyol Kozmetik Günlük Raporu — 2026-08-19
 ✅ 200 ürünlük havuz | 200/200 detay yenilendi | kalite PASS
 ♻️ 200 ürünün tamamı günlük detay taramasında
-🔥 Trend: 1) ILLUSIONE FRAGRANCE Lumiére Edp Kadın Parfüm 50ml | Tatlı - Vanilya - Gurme | Narenciye, Müge, Orkide, Misk (479 TL) | 2) Yves Rocher Monoi Nemlendirici Peelingli Duş Yağı-Tüm Ciltler-Monoi de Tahiti-Vegan-150ml (274.95 TL) | 3) Embeauty Ultra Siyah Dolgunlaştırıcı Maskara – Hacim ve Uzunluk Etkili (449 TL)
-🎯 Niche: 1) Kifi 280'li İpek Takma Kirpik Seti,Yapıştırıcı Sabitleyici Çıkarıcı Ve Takma Kirpik Cımbızı | 2) CALLİEL Leke Karşıtı Ton Eşitleyici ve Gözenek Sıkılaştırıcı Bakım Seti | 3) NIVOSHE 75ML Diş Beyazlatıcı Jel Parlatıcı Jel 75 ML Teeth Whitening Gel 75ML
-📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/kozmetik/reports/2026-08-18.md
+🔥 Trend: 1) ILLUSIONE FRAGRANCE Lumiére Edp Kadın Parfüm 50ml | Tatlı - Vanilya - Gurme | Narenciye, Müge, Orkide, Misk (479 TL) | 2) Frederic Patric C'OR Premium Parfüm (1698 TL) | 3) Cream Co. Allık Ruj Göz Farı Glow Tint Soft Mocha | Nemlendirici Makyaj | Nude | Hyaluronik Asit Peptit (199.9 TL)
+🎯 Niche: 1) NIVOSHE 75ML Diş Beyazlatıcı Jel Parlatıcı Jel 75 ML Teeth Whitening Gel 75ML | 2) ILLUSIONE FRAGRANCE Lumiére Edp Kadın Parfüm 50ml | Tatlı - Vanilya - Gurme | Narenciye, Müge, Orkide, Misk | 3) Clara Hygienics Glyco Refresh %5 Glikolik Asit Tonik 200ml - Leke Karşıtı Aydınlatıcı Yenileyici Vegan (Yüz - Vücut)
+📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/kozmetik/reports/2026-08-19.md
 Not: Yükselen/düşen listeleri ikinci ölçümden itibaren günlük farklarla dolacaktır.

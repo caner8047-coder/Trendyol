@@ -2,6 +2,8 @@
 
 Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek`, `ev-yasam`, `kadın`, `genel-cok-satanlar`, `supermarket`, `kozmetik`, `elektronik`, `mobilya`, `otomobil-motosiklet`, `hamile` ve `hobi`.
 
+Veri Mimarı yayını profil listesini `config.json` ve `profiles/*.json` dosyalarından otomatik keşfeder. Yeni bir profil kalite kapısını geçtiğinde ayrıca yayıncı koduna eklenmeden Supabase'e gönderilir ve sitede görünür. Geçici olarak yayın dışı bırakmak için profil ayarına `"website": { "enabled": false }` eklenebilir; bu işlem geçmiş veriyi silmez.
+
 İlk aşamada her günlük çalışmada birden fazla sonuç sayfası birleştirilerek **200 benzersiz ürün** izlenir. 200 ürün eşiği sağlanmazsa kalite kapısı çalışmayı reddeder ve son geçerli rapor korunur. Yapı, sistem kararlılığı doğrulandıktan sonra ayar dosyasından yeniden 1.000 ürüne ölçeklenebilir.
 
 İlk aşamada 200 ürünün tamamı her gün ayrıntılı olarak yenilenir. Sistem yeniden 1.000 ürüne çıkarıldığında ilk 200 günlük, kalan ürünler dönüşümlü ve hızlı değişen ürünler öncelikli olacak şekilde katmanlı strateji kullanılabilir.

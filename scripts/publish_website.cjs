@@ -4,17 +4,6 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const PROFILES = [
-  ['cocuk', ''],
-  ['erkek', 'categories/erkek'],
-  ['ev-yasam', 'categories/ev-yasam'],
-  ['kadin', 'categories/kadin'],
-  ['genel-cok-satanlar', 'categories/genel-cok-satanlar'],
-  ['supermarket', 'categories/supermarket'],
-  ['kozmetik', 'categories/kozmetik'],
-  ['elektronik', 'categories/elektronik'],
-  ['mobilya', 'categories/mobilya']
-];
 
 function cliArg(name) {
   const index = process.argv.indexOf(`--${name}`);
@@ -27,12 +16,71 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-async function publishProfile(baseUrl, secret, profile, prefix) {
-  const root = path.join(ROOT, prefix);
-  const quality = readJson(path.join(root, 'quality', 'latest.json'));
-  const products = readJson(path.join(root, 'data', 'latest.json'));
-  if (quality.status !== 'PASS' || products.length < 200) {
-    throw new Error(`${profile}: kalite kapısı yayınlamayı reddetti`);
+function profileLabel(config) {
+  if (config.website && typeof config.website.label === 'string' && config.website.label.trim()) {
+    return config.website.label.trim();
+  }
+  return String(config.name || config.profile)
+    .replace(/^Trendyol\s+/i, '')
+    .replace(/\s+(?:En\s+)?Çok\s+Satan(?:lar|\s+Ürünler)$/i, '')
+    .trim();
+}
+
+function discoverProfiles(root = ROOT) {
+  const configFiles = [path.join(root, 'config.json')];
+  const profilesDirectory = path.join(root, 'profiles');
+  if (fs.existsSync(profilesDirectory)) {
+    configFiles.push(
+      ...fs
+        .readdirSync(profilesDirectory)
+        .filter(file => file.endsWith('.json'))
+        .sort()
+        .map(file => path.join(profilesDirectory, file))
+    );
+  }
+
+  const discovered = configFiles.map((configFile, index) => {
+    const config = readJson(configFile);
+    const slug = String(config.profile || '').trim();
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      throw new Error(`Geçersiz profil kimliği: ${configFile}`);
+    }
+    const isRootProfile = path.resolve(configFile) === path.join(root, 'config.json');
+    return {
+      slug,
+      label: profileLabel(config),
+      sourceLabel: String(config.sourceLabel || config.name || slug).trim(),
+      prefix: isRootProfile ? '' : path.join('categories', slug),
+      runTime: String(config.dailyRunTime || '99:99'),
+      enabled: config.website?.enabled !== false,
+      discoveryIndex: index
+    };
+  });
+
+  const seen = new Set();
+  for (const profile of discovered) {
+    if (seen.has(profile.slug)) throw new Error(`Tekrarlanan profil kimliği: ${profile.slug}`);
+    seen.add(profile.slug);
+  }
+
+  return discovered.sort(
+    (a, b) => a.runTime.localeCompare(b.runTime) || a.discoveryIndex - b.discoveryIndex
+  );
+}
+
+async function publishProfile(baseUrl, secret, profile) {
+  const root = path.join(ROOT, profile.prefix);
+  const qualityFile = path.join(root, 'quality', 'latest.json');
+  const productsFile = path.join(root, 'data', 'latest.json');
+  if (profile.enabled && (!fs.existsSync(qualityFile) || !fs.existsSync(productsFile))) {
+    console.log(`PUBLISH_SKIPPED profile=${profile.slug} reason=missing-snapshot`);
+    return;
+  }
+  const quality = profile.enabled ? readJson(qualityFile) : {};
+  const products = profile.enabled ? readJson(productsFile) : [];
+  if (profile.enabled && (quality.status !== 'PASS' || products.length < 200)) {
+    console.log(`PUBLISH_SKIPPED profile=${profile.slug} reason=quality-gate`);
+    return;
   }
 
   const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/pazar-nabzi/ingest`, {
@@ -42,7 +90,12 @@ async function publishProfile(baseUrl, secret, profile, prefix) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      profile,
+      profile: profile.slug,
+      profileMetadata: {
+        label: profile.label,
+        sourceLabel: profile.sourceLabel,
+        enabled: profile.enabled
+      },
       quality,
       products,
       sourceCommit: process.env.GITHUB_SHA || null
@@ -51,9 +104,13 @@ async function publishProfile(baseUrl, secret, profile, prefix) {
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || result.ok !== true) {
-    throw new Error(`${profile}: HTTP ${response.status} ${JSON.stringify(result)}`);
+    throw new Error(`${profile.slug}: HTTP ${response.status} ${JSON.stringify(result)}`);
   }
-  console.log(`PUBLISH_OK profile=${profile} products=${result.productCount}`);
+  if (!profile.enabled) {
+    console.log(`PUBLISH_DISABLED profile=${profile.slug}`);
+    return;
+  }
+  console.log(`PUBLISH_OK profile=${profile.slug} products=${result.productCount}`);
 }
 
 async function main() {
@@ -63,15 +120,20 @@ async function main() {
     console.log('PUBLISH_SKIPPED Veri Mimarı yayın sırları henüz tanımlanmadı.');
     return;
   }
+  const profiles = discoverProfiles();
   const requested = cliArg('profile');
-  const selected = requested ? PROFILES.filter(([profile]) => profile === requested) : PROFILES;
+  const selected = requested ? profiles.filter(profile => profile.slug === requested) : profiles;
   if (!selected.length) throw new Error(`Bilinmeyen profil: ${requested}`);
-  for (const [profile, prefix] of selected) {
-    await publishProfile(baseUrl, secret, profile, prefix);
+  for (const profile of selected) {
+    await publishProfile(baseUrl, secret, profile);
   }
 }
 
-main().catch(error => {
-  console.error(error.stack || error.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(error => {
+    console.error(error.stack || error.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { discoverProfiles, profileLabel };

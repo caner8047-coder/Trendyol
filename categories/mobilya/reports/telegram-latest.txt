@@ -1,7 +1,7 @@
-📊 Trendyol Mobilya Günlük Raporu — 2026-08-19
+📊 Trendyol Mobilya Günlük Raporu — 2026-08-20
 ✅ 200 ürünlük havuz | 200/200 detay yenilendi | kalite PASS
 ♻️ 200 ürünün tamamı günlük detay taramasında
-🔥 Trend: 1) Hürrem Koyu Kahve Koltuk Tepsisi Yan Sehpa Tesbih Cevizi Cm Ortasabit 13,5 Cm Amerikan Servisi (97.8 TL) | 2) YUNUSOĞLU HOME Katlanabilir Ahşap Koltuk Kenarı Yan Sehpa Amerikan Servisi Kanepe Kenarı Koltuk Tepsisi Ceviz Rengi (142.4 TL) | 3) Mobezzo 3’lü Yuvarlak Zigon Sehpa Takımı –hobistan Ahşap Ayaklı, Modern Tarz, Kahve Ve Sunum Sehpası (641 TL)
+🔥 Trend: 1) Hürrem Koyu Kahve Koltuk Tepsisi Yan Sehpa Tesbih Cevizi Cm Ortasabit 13,5 Cm Amerikan Servisi (97.8 TL) | 2) YUNUSOĞLU HOME Katlanabilir Ahşap Koltuk Kenarı Yan Sehpa Amerikan Servisi Kanepe Kenarı Koltuk Tepsisi Ceviz Rengi (142.4 TL) | 3) Mobezzo 3’lü Yuvarlak Zigon Sehpa Takımı –hobistan Ahşap Ayaklı, Modern Tarz, Kahve Ve Sunum Sehpası (745 TL)
 🎯 Niche: Baz çizgisi oluşuyor
-📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/mobilya/reports/2026-08-19.md
+📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/mobilya/reports/2026-08-20.md
 Not: Yükselen/düşen listeleri ikinci ölçümden itibaren günlük farklarla dolacaktır.

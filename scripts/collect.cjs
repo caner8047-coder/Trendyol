@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
 function cliArg(name, fallback = null) {
@@ -49,6 +48,20 @@ function compactNumber(value) {
   const mult = { B: 1000, K: 1000, M: 1000000 }[(m[2] || '').toUpperCase()] || 1;
   return Math.round(base * mult);
 }
+function parseSalesSignal(value) {
+  const text = normalize(value);
+  const match = text.match(/(?:Son\s+)?(\d+)\s+günde\s+([\d.,]+[BMK]?\+?)/i);
+  if (!match) return { sales_signal_days: null, sales_signal_min: null, sales_signal_daily_min: null };
+  const days = Number(match[1]);
+  const minimum = compactNumber(match[2]);
+  return {
+    sales_signal_days: Number.isFinite(days) && days > 0 ? days : null,
+    sales_signal_min: minimum,
+    sales_signal_daily_min: days > 0 && minimum !== null ? Math.round((minimum / days) * 10) / 10 : null
+  };
+}
+function rankScope(sourceSegment) { return `${PROFILE}:${normalize(sourceSegment) || 'unknown'}`; }
+function offerKey(product, merchant) { return `${normalize(product) || 'unknown'}:${normalize(merchant) || 'unknown'}`; }
 function productId(url) { return firstMatch(url, /-p-(\d+)/); }
 function merchantId(url) { try { return new URL(url).searchParams.get('merchantId'); } catch { return null; } }
 function brandFromUrl(url, title) {
@@ -108,8 +121,8 @@ function readFreshListingCache() {
   } catch { return null; }
 }
 const numericHistoryFields = new Set([
-  'source_page','search_position','bestseller_rank','category_rank','rank_delta','trend_score','niche_score','seller_score','price','original_price','discount_percent','price_delta_percent',
-  'sales_signal_min','rating','rating_count','review_count','review_delta','question_count','shipping_cost','handling_days_min','handling_days_max','transit_days_min','transit_days_max','sample_review_count','sample_review_avg','detail_age_days'
+  'source_page','search_position','bestseller_rank','category_rank','rank_scope_position','rank_delta','trend_score','niche_score','seller_score','price','original_price','discount_percent','price_delta_percent',
+  'sales_signal_days','sales_signal_min','sales_signal_daily_min','rating','rating_count','review_count','review_delta','question_count','shipping_cost','handling_days_min','handling_days_max','transit_days_min','transit_days_max','sample_review_count','sample_review_avg','detail_age_days'
 ]);
 const jsonHistoryFields = new Set(['campaigns','properties','data_sources','field_availability','detail_selection']);
 function hydrateHistoryRow(row) {
@@ -184,9 +197,13 @@ function parseListingCard(raw, position, href, listingTitle, listingBrand, sourc
   const rating = schemaNumber(firstMatch(text, /\b([1-5][.,]\d)\s*\([\d.]+\)/));
   const ratingCount = trNumber(firstMatch(text, /\b[1-5][.,]\d\s*\(([\d.]+)\)/));
   const title = normalize(listingTitle);
+  const product = productId(href);
+  const merchant = merchantId(href);
+  const salesSignal = firstMatch(text, /((?:Son\s+)?\d+\s+günde\s+[\d.,]+[BMK]?\+?\s+ürün\s+satıldı!?)/i);
   return {
-    product_id: productId(href), url: href.split('#')[0], merchant_id: merchantId(href),
+    product_id: product, url: href.split('#')[0], merchant_id: merchant, offer_key: offerKey(product, merchant),
     search_position: position, bestseller_rank: position, category_rank: explicitRank ? Number(explicitRank) : (hubRank ? Number(hubRank) : null),
+    rank_scope: rankScope(sourceSegment), rank_scope_position: segmentPosition,
     source_segment: sourceSegment, source_query: sourceQuery, segment_position: segmentPosition, source_page: sourcePage,
     listing_title: title, listing_brand: normalize(listingBrand), title,
     brand: normalize(listingBrand || brandFromUrl(href, title)),
@@ -196,8 +213,8 @@ function parseListingCard(raw, position, href, listingTitle, listingBrand, sourc
     currency: 'TRY', rating, rating_count: ratingCount,
     stock_status: /Stokta Yok/i.test(text) ? 'OutOfStock' : 'InStock',
     stock_signal: firstMatch(text, /(son \d+ ürün|tükenmek üzere|stokta yok)/i),
-    sales_signal: firstMatch(text, /((?:Son\s+)?\d+\s+günde\s+[\d.,]+[BMK]?\+?\s+ürün\s+satıldı!?)/i),
-    sales_signal_min: compactNumber(firstMatch(text, /(?:Son\s+)?\d+\s+günde\s+([\d.,]+[BMK]?\+?)/i)),
+    sales_signal: salesSignal,
+    ...parseSalesSignal(salesSignal),
     campaigns: pickCampaigns(text),
     badge: firstMatch(text, /(En Çok Satan\s+\d+\.\s*Ürün|En Çok Ziyaret Edilen\s+\d+\.\s*Ürün|En Çok Favorilenen\s+\d+\.\s*Ürün|Fenomen Seçimi)/i),
     detail_status: 'listing_only', detail_attempted: false, detail_ok: null
@@ -348,6 +365,7 @@ async function collectDetail(context, item, index) {
     const question = firstMatch(body, /([\d.,]+)\s+Soru-Cevap/i);
     const reviews = Array.isArray(p.review) ? p.review : [];
     const properties = Object.fromEntries((p.additionalProperty || []).map(x => [normalize(x.name), normalize(x.unitText || x.value)]));
+    const salesSignal = item.sales_signal || firstMatch(body, /(\d+\s+günde\s+[\d.,]+[BMK]?\+?\s+ürün satıldı!?)/i);
     return {
       ...item, detail_status: 'refreshed', detail_attempted: true, detail_ok: true, detail_error: null, canonical_url: payload.canonical,
       title, brand: normalize(p.brand?.name || p.manufacturer || item.listing_brand || brandFromUrl(item.url, title)), category: normalize(p.pattern),
@@ -359,8 +377,8 @@ async function collectDetail(context, item, index) {
       rating: Number(rating.ratingValue) || schemaNumber(firstMatch(body, /\n(\d[.,]\d)\n[\d.]+\s+Değerlendirme/i)) || null,
       rating_count: Number(rating.ratingCount) || trNumber(firstMatch(body, /\n([\d.]+)\s+Değerlendirme/i)) || null,
       review_count: Number(rating.reviewCount) || null, question_count: trNumber(question),
-      sales_signal: item.sales_signal || firstMatch(body, /(\d+\s+günde\s+[\d.,]+[BMK]?\+?\s+ürün satıldı!?)/i),
-      sales_signal_min: compactNumber(firstMatch(body, /\d+\s+günde\s+([\d.,]+[BMK]?\+?)/i)),
+      sales_signal: salesSignal,
+      ...parseSalesSignal(salesSignal),
       basket_signal: firstMatch(body, /([\d.,]+[BMK]?\s+kişinin sepetinde)/i),
       favorite_signal: firstMatch(body, /([\d.,]+[BMK]?\s+kişi favoriledi)/i),
       view_signal: firstMatch(body, /(Son 24 saatte\s+[\d.,]+[BMK]?\s+kişi görüntüledi)/i),
@@ -405,27 +423,44 @@ function mergePoolProducts(listed, detailResults, history, timestamp, date, sele
     return base;
   });
 }
-function previousByProduct(history, today) {
-  const prior = history.filter(r => r.date && r.date < today).sort((a, b) => b.date.localeCompare(a.date));
-  const map = new Map(); for (const r of prior) if (!map.has(r.product_id)) map.set(r.product_id, r); return map;
+function previousObservations(history, today) {
+  const prior = history.map(hydrateHistoryRow).filter(r => r.date && r.date < today).sort((a, b) => b.date.localeCompare(a.date));
+  const byProduct = new Map();
+  const byRankScope = new Map();
+  const byOffer = new Map();
+  for (const row of prior) {
+    if (row.product_id && !byProduct.has(row.product_id)) byProduct.set(row.product_id, row);
+    const scope = row.rank_scope || rankScope(row.source_segment);
+    const rankKey = row.product_id && scope ? `${row.product_id}:${scope}` : null;
+    if (rankKey && !byRankScope.has(rankKey)) byRankScope.set(rankKey, row);
+    const currentOfferKey = row.offer_key || offerKey(row.product_id, row.merchant_id);
+    if (row.product_id && currentOfferKey && !byOffer.has(currentOfferKey)) byOffer.set(currentOfferKey, row);
+  }
+  return { byProduct, byRankScope, byOffer };
 }
 function scoreProducts(products, history, today) {
-  const previous = previousByProduct(history, today);
+  const previous = previousObservations(history, today);
   return products.map(p => {
-    const old = previous.get(p.product_id);
-    const rankDelta = old ? Number(old.bestseller_rank || 0) - Number(p.bestseller_rank || 0) : null;
-    const priceDeltaPct = old && Number(old.price) ? Math.round((Number(p.price) / Number(old.price) - 1) * 1000) / 10 : null;
-    const reviewDelta = old ? Number(p.review_count || 0) - Number(old.review_count || 0) : null;
+    const scope = p.rank_scope || rankScope(p.source_segment);
+    const scopePosition = Number(p.rank_scope_position || p.segment_position || p.bestseller_rank || 0);
+    const oldProduct = previous.byProduct.get(p.product_id);
+    const oldRank = previous.byRankScope.get(`${p.product_id}:${scope}`);
+    const currentOfferKey = p.offer_key || offerKey(p.product_id, p.merchant_id);
+    const oldOffer = previous.byOffer.get(currentOfferKey);
+    const oldScopePosition = Number(oldRank?.rank_scope_position || oldRank?.segment_position || oldRank?.bestseller_rank || 0);
+    const rankDelta = oldRank && oldScopePosition > 0 && scopePosition > 0 ? oldScopePosition - scopePosition : null;
+    const priceDeltaPct = oldOffer && Number(oldOffer.price) ? Math.round((Number(p.price) / Number(oldOffer.price) - 1) * 1000) / 10 : null;
+    const reviewDelta = oldProduct ? Number(p.review_count || 0) - Number(oldProduct.review_count || 0) : null;
     const competitionCount = p.review_count ?? p.rating_count;
-    const trendScore = Math.round((Math.max(0, 40 - p.bestseller_rank) * 2 + Math.log10((competitionCount || 0) + 1) * 8 + Math.min(30, (p.sales_signal_min || 0) / 50) + Math.max(0, p.discount_percent || 0)) * 10) / 10;
-    const nicheScore = competitionCount === null || competitionCount === undefined ? null : Math.round((Math.min(50, (p.sales_signal_min || 0) / 20) + Math.max(0, 30 - Math.log10(competitionCount + 1) * 8) + Math.max(0, 25 - p.bestseller_rank / 2)) * 10) / 10;
-    return { ...p, rank_delta: rankDelta, price_delta_percent: priceDeltaPct, review_delta: reviewDelta, trend_score: trendScore, niche_score: nicheScore };
+    const trendScore = Math.round((Math.max(0, 40 - scopePosition) * 2 + Math.log10((competitionCount || 0) + 1) * 8 + Math.min(30, (p.sales_signal_daily_min || 0) / 20) + Math.max(0, p.discount_percent || 0)) * 10) / 10;
+    const nicheScore = competitionCount === null || competitionCount === undefined ? null : Math.round((Math.min(50, (p.sales_signal_daily_min || 0) / 8) + Math.max(0, 30 - Math.log10(competitionCount + 1) * 8) + Math.max(0, 25 - scopePosition / 2)) * 10) / 10;
+    return { ...p, rank_scope: scope, rank_scope_position: scopePosition, offer_key: currentOfferKey, rank_delta: rankDelta, price_delta_percent: priceDeltaPct, review_delta: reviewDelta, trend_score: trendScore, niche_score: nicheScore };
   });
 }
 const columns = [
-  'date','captured_at','query','sort','source_segment','source_query','segment_position','source_page','search_position','bestseller_rank','category_rank','rank_delta','trend_score','niche_score',
-  'product_id','merchant_id','title','brand','category','url','seller_name','seller_score','price','original_price','discount_percent','price_delta_percent','currency',
-  'campaigns','stock_status','stock_signal','sales_signal','sales_signal_min','rating','rating_count','review_count','review_delta','question_count',
+  'date','captured_at','query','sort','source_segment','source_query','segment_position','source_page','search_position','bestseller_rank','category_rank','rank_scope','rank_scope_position','rank_delta','trend_score','niche_score',
+  'product_id','merchant_id','offer_key','title','brand','category','url','seller_name','seller_score','price','original_price','discount_percent','price_delta_percent','currency',
+  'campaigns','stock_status','stock_signal','sales_signal','sales_signal_days','sales_signal_min','sales_signal_daily_min','rating','rating_count','review_count','review_delta','question_count',
   'basket_signal','favorite_signal','view_signal','shipping_cost','shipping_currency','handling_days_min','handling_days_max','transit_days_min','transit_days_max','delivery_summary',
   'badge','image_url','properties','sample_review_count','sample_review_avg','detail_status','detail_selection','detail_attempted','detail_refreshed_at','detail_age_days','data_sources','field_availability','detail_ok','detail_error'
 ];
@@ -438,8 +473,8 @@ function mdTable(rows, fields) {
   }).join(' | ')} |`).join('\n');
   return `${header}\n${body}`;
 }
-const listCols = ['bestseller_rank','rank_delta','trend_score','niche_score','product_id','title','brand','seller_name','price','original_price','price_delta_percent','stock_status','sales_signal','rating','review_count','review_delta','question_count','campaigns','delivery_summary','detail_status','detail_age_days','url'];
-const listMdFields = [['bestseller_rank','Sıra'],['rank_delta','Sıra Δ'],['trend_score','Trend'],['niche_score','Niche'],['title','Ürün'],['brand','Marka'],['seller_name','Satıcı'],['price','Fiyat TL'],['stock_status','Stok'],['rating','Puan'],['review_count','Yorum'],['question_count','Soru'],['detail_status','Detay'],['detail_age_days','Yaş (gün)'],['campaigns','Kampanya']];
+const listCols = ['rank_scope','rank_scope_position','bestseller_rank','rank_delta','trend_score','niche_score','product_id','merchant_id','offer_key','title','brand','seller_name','price','original_price','price_delta_percent','stock_status','sales_signal','sales_signal_days','sales_signal_min','sales_signal_daily_min','rating','review_count','review_delta','question_count','campaigns','delivery_summary','detail_status','detail_age_days','url'];
+const listMdFields = [['rank_scope_position','Kapsam içi sıra'],['rank_delta','Sıra Δ'],['trend_score','Trend'],['niche_score','Niche'],['title','Ürün'],['brand','Marka'],['seller_name','Satıcı'],['price','Fiyat TL'],['stock_status','Stok'],['rating','Puan'],['review_count','Yorum'],['question_count','Soru'],['detail_status','Detay'],['detail_age_days','Yaş (gün)'],['campaigns','Kampanya']];
 const listTitles = {
   'rising.csv': 'Yükselen Ürünler', 'falling.csv': 'Düşen Ürünler', 'trending.csv': 'Trend Ürünler',
   'niche.csv': 'Niche Fırsatlar', 'campaigns.csv': 'Kampanyalı Ürünler',
@@ -478,7 +513,7 @@ function generateReport(products, date, quality) {
   const detailStrategy = Number(quality.selection?.topN || 0) >= products.length
     ? `${products.length} ürünün tamamı günlük detay yenilemesinde.`
     : `İlk ${quality.selection?.topN || 0} ürün günlük, ${quality.selection?.rotationN || 0} ürün dönüşümlü yenileniyor${quality.selection?.hotN ? `; ${quality.selection.hotN} hızlı değişen ürün ayrıca önceliklendirildi` : ''}.`;
-  const topFields = [['bestseller_rank','Sıra'],['title','Ürün'],['price','Fiyat TL'],['seller_name','Satıcı'],['rating','Puan'],['rating_count','Değerlendirme'],['review_count','Yorum'],['question_count','Soru'],['sales_signal','Satış sinyali']];
+  const topFields = [['rank_scope_position','Kapsam içi sıra'],['source_query','Kapsam'],['title','Ürün'],['price','Fiyat TL'],['seller_name','Satıcı'],['rating','Puan'],['rating_count','Değerlendirme'],['review_count','Yorum'],['question_count','Soru'],['sales_signal','Satış sinyali']];
   return `# ${config.reportTitle || config.name} — ${date}\n\n` +
     `> Kaynak: [${config.sourceLabel || config.name}](${config.searchUrl})\n> Toplama zamanı: ${products[0]?.captured_at || '-'}\n> Havuz: ${products.length} ürün | Bugün detay yenilenen: ${quality.detailRefreshed}/${quality.detailAttempted} | Kalite: **${quality.status}**\n\n` +
     `## Yönetici özeti\n\n` +
@@ -531,6 +566,7 @@ function qualityFor(products) {
   };
 }
 async function main() {
+  const { chromium } = require('playwright');
   if (!fs.existsSync(CHROME)) throw new Error(`Chrome bulunamadı: ${CHROME}`);
   const { date, timestamp } = nowIstanbul();
   mkdir(path.join(OUTPUT_ROOT, 'data')); mkdir(path.join(OUTPUT_ROOT, 'reports')); mkdir(path.join(OUTPUT_ROOT, 'quality'));
@@ -635,5 +671,5 @@ async function main() {
     console.log(JSON.stringify({ ok: quality.status === 'PASS', profile: PROFILE, date, quality, files: { report: `${prefix}reports/${date}.md`, snapshot: `${prefix}snapshots/${date}/products.csv`, lists: `${prefix}lists/${date}` } }, null, 2));
   } finally { await context.close(); await browser.close(); }
 }
-module.exports = { ROOT, OUTPUT_ROOT, PROFILE, config, columns, listCols, listMdFields, listTitles, buildLists, generateReport, mdTable, qualityFor, writeCsv };
+module.exports = { ROOT, OUTPUT_ROOT, PROFILE, config, columns, listCols, listMdFields, listTitles, buildLists, generateReport, mdTable, qualityFor, writeCsv, parseSalesSignal, rankScope, offerKey, scoreProducts };
 if (require.main === module) main().catch(err => { console.error(err.stack || err.message); process.exit(1); });

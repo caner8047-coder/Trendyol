@@ -1,7 +1,7 @@
-📊 Trendyol Ev & Yaşam Günlük Raporu — 2026-08-19
+📊 Trendyol Ev & Yaşam Günlük Raporu — 2026-08-20
 ✅ 200 ürünlük havuz | 200/200 detay yenilendi | kalite PASS
 ♻️ 200 ürünün tamamı günlük detay taramasında
-🔥 Trend: 1) Nart Home Yatak Alezi Pamuklu Kapitone Fitted Full Kenar Sıvı Geçirmez Yatak Koruyucu Beyaz (469.9 TL) | 2) Hagen 6lı Kapı Arkası Askılık Banyo Askısı Duvar Askısı Elbise Kıyafet Askısı Premium Üretim (249.9 TL) | 3) ACAR Karat 9 Parça Rendeli Karıştırma ve Saklama Kabı (16-20-24 cm) (929.9 TL)
-🎯 Niche: 1) BASHTUGH TİCARET Bohem Sandalye Örtüsü Arkası Tam Kaplama Yıkanabilir Esnek Lastikli Mutfak Sandalye Kılıfı Alt Üst 2Parça Takım Chair Cover | 2) Fast Story Beyaz Amerikan Kapı Arkası Askılık Mutfak Banyo Düzenleyici , Elbise Askısı, Askılık, Askı, Plastik Askı | 3) Dream Time 2 Adet Bambu Lüks Sıvı Geçirmez Yastık Alezi | 50x70cm Su Geçirmez Jakarlı Yastık Alezi 2'li Set
-📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/ev-yasam/reports/2026-08-19.md
+🔥 Trend: 1) KARTEYA Yapışkanlı 4 lü Siyah Uzun Havluluk Rulo Havluluk Wc Tuvalet Kağıtlık Yuvarlak Havluluk Set (164.21 TL) | 2) KARTEYA 10 lu Güçlü Kendinden Yapışkanlı Kancalar Köşe Rafı Banyo Rafı Duş Rafı Kancası, Su Geçirmez Askı (65.1 TL) | 3) Galeriyo Makyaj Organizeri Çekmeceli Tavşan ve 360 Derece Dönebilen 5 Bölmeli İkili Set Beyaz (345.51 TL)
+🎯 Niche: 1) YEGGE 30x10cm Çekmece ve Dolap içi Düzenleyici, Eşarp Düzenleyici, Katlanabilir Çorap ve Çamaşır Organizer Raf Düzenleyici | 2) Galeriyo Makyaj Organizeri Çekmeceli Tavşan ve 360 Derece Dönebilen 5 Bölmeli İkili Set Beyaz | 3) Genel Markalar Pilastik Mandal 24 Lü 45098760451
+📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/ev-yasam/reports/2026-08-20.md
 Not: Yükselen/düşen listeleri ikinci ölçümden itibaren günlük farklarla dolacaktır.

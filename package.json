@@ -13,6 +13,7 @@
     "collect:kozmetik": "node scripts/collect.cjs --profile kozmetik",
     "collect:elektronik": "node scripts/collect.cjs --profile elektronik",
     "collect:mobilya": "node scripts/collect.cjs --profile mobilya",
+    "collect:otomobil-motosiklet": "node scripts/collect.cjs --profile otomobil-motosiklet",
     "quality": "node scripts/quality_check.cjs",
     "quality:erkek": "node scripts/quality_check.cjs --profile erkek",
     "quality:ev-yasam": "node scripts/quality_check.cjs --profile ev-yasam",
@@ -22,6 +23,7 @@
     "quality:kozmetik": "node scripts/quality_check.cjs --profile kozmetik",
     "quality:elektronik": "node scripts/quality_check.cjs --profile elektronik",
     "quality:mobilya": "node scripts/quality_check.cjs --profile mobilya",
+    "quality:otomobil-motosiklet": "node scripts/quality_check.cjs --profile otomobil-motosiklet",
     "test:contract": "node --test scripts/collect.contract.test.cjs",
     "publish:website": "node scripts/publish_website.cjs"
   }

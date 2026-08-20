@@ -1,0 +1,32 @@
+name: Veri Mimari pazar nabzi yayini
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - data/latest.json
+      - quality/latest.json
+      - categories/*/data/latest.json
+      - categories/*/quality/latest.json
+      - scripts/publish_website.cjs
+  workflow_dispatch:
+
+concurrency:
+  group: veri-mimari-market-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Publish validated snapshots
+        env:
+          VERI_MIMARI_INGEST_URL: ${{ secrets.VERI_MIMARI_INGEST_URL }}
+          VERI_MIMARI_INGEST_SECRET: ${{ secrets.VERI_MIMARI_INGEST_SECRET }}
+        run: node scripts/publish_website.cjs

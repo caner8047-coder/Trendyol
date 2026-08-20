@@ -21,6 +21,8 @@
     "quality:supermarket": "node scripts/quality_check.cjs --profile supermarket",
     "quality:kozmetik": "node scripts/quality_check.cjs --profile kozmetik",
     "quality:elektronik": "node scripts/quality_check.cjs --profile elektronik",
-    "quality:mobilya": "node scripts/quality_check.cjs --profile mobilya"
+    "quality:mobilya": "node scripts/quality_check.cjs --profile mobilya",
+    "test:contract": "node --test scripts/collect.contract.test.cjs",
+    "publish:website": "node scripts/publish_website.cjs"
   }
 }

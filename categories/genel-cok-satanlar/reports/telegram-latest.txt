@@ -1,7 +1,7 @@
-📊 Trendyol Genel Çok Satanlar Günlük Raporu — 2026-08-19
+📊 Trendyol Genel Çok Satanlar Günlük Raporu — 2026-08-20
 ✅ 200 ürünlük havuz | 200/200 detay yenilendi | kalite PASS
 ♻️ 200 ürünün tamamı günlük detay taramasında
-🔥 Trend: 1) Wega Moda Kadın File Örgü Bandana Yazlık Delikli Triko Saç Bandanası Plaj Uyumlu (92.78 TL) | 2) blackcomb Kadın Gold Deniz Kabuğu/Yıldızı İncili Saç Süsü 10 adet (49.99 TL) | 3) Monalisa Kadın Büyük Boy Siyah Fiyonk Toka (11Cm) (7.81 TL)
-🎯 Niche: 1) blackcomb Kadın Gold Deniz Kabuğu/Yıldızı İncili Saç Süsü 10 adet | 2) Monalisa Kadın Büyük Boy Siyah Fiyonk Toka (11Cm) | 3) Embeauty Cherki Glow Argan Yağı İçerikli Besleyici Saç Parfümü 100 ml
-📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/genel-cok-satanlar/reports/2026-08-19.md
+🔥 Trend: 1) Siyah İnci sarı ekose kareli Nakışlı Düğmeli Biyeli İnce Soft Örme Pijama Takımı 8001 (439.99 TL) | 2) blackcomb Kadın Gold Deniz Kabuğu/Yıldızı İncili Saç Süsü 10 adet (49.99 TL) | 3) ETHIQUET Lıllesol Kadın Fitilli Görünümlü Kalın Askılı Basic Beyaz Bluz Atlet (222.75 TL)
+🎯 Niche: 1) Genel Markalar Pencere - Kapı Sabitleyici Stoper / Rüzgar Önleyici Cam Tutucu | 2) cabuk baskı Kız Çocuklara Özel 120 Adet İsime Özel Okul Etiketi Seti 5 Sevimli Temalı Defter Kitap ve Kalem Etiketi | 3) Kenzlife mobilya kulpu boru rustik96 siyah plastik dolap kulbu 01 adet kulp gardırop vida dahildir
+📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/genel-cok-satanlar/reports/2026-08-20.md
 Not: Yükselen/düşen listeleri ikinci ölçümden itibaren günlük farklarla dolacaktır.

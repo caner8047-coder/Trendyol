@@ -1,6 +1,6 @@
 # Trendyol En Çok Satanlar Veri Havuzu
 
-Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek`, `ev-yasam`, `kadın`, `genel-cok-satanlar`, `supermarket`, `kozmetik`, `elektronik`, `mobilya` ve `otomobil-motosiklet`.
+Bu repo, Trendyol'daki farklı aramaların **En Çok Satan** sıralamasını günlük olarak izleyen bir veri havuzudur. Aktif profiller: `çocuk`, `erkek`, `ev-yasam`, `kadın`, `genel-cok-satanlar`, `supermarket`, `kozmetik`, `elektronik`, `mobilya`, `otomobil-motosiklet` ve `hamile`.
 
 İlk aşamada her günlük çalışmada birden fazla sonuç sayfası birleştirilerek **200 benzersiz ürün** izlenir. 200 ürün eşiği sağlanmazsa kalite kapısı çalışmayı reddeder ve son geçerli rapor korunur. Yapı, sistem kararlılığı doğrulandıktan sonra ayar dosyasından yeniden 1.000 ürüne ölçeklenebilir.
 
@@ -26,6 +26,8 @@ Ana `çocuk` en çok satan akışı benzersiz ürün vermeyi bıraktığında ha
 
 `otomobil-motosiklet` profili kullanıcı tarafından verilen Otomobil & Motosiklet Çok Satanlar vitriniyle başlar; gerektiğinde yalnız `wc=105777` kapsamındaki alt alışveriş niyetleriyle 200 ürüne tamamlar. Çıktıları `categories/otomobil-motosiklet/` altında tutulur ve her gün 13:30'da çalışır.
 
+`hamile` profili kullanıcı tarafından verilen Hamile Çok Satanlar vitriniyle başlar; gerektiğinde yalnız `wc=104625` kapsamındaki hamile giyim alt alışveriş niyetleriyle 200 ürüne tamamlar. Çıktıları `categories/hamile/` altında tutulur ve her gün 14:00'da çalışır.
+
 ## Üretilen çıktılar
 
 - `data/history.csv`: ürünlerin gün bazında uzun dönem geçmişi
@@ -44,6 +46,7 @@ Ana `çocuk` en çok satan akışı benzersiz ürün vermeyi bıraktığında ha
 - `categories/elektronik/`: Elektronik BEST_SELLER sıralamasına ait bağımsız veri havuzu ve raporlar
 - `categories/mobilya/`: Mobilya Çok Satanlar sıralamasına ait bağımsız veri havuzu ve raporlar
 - `categories/otomobil-motosiklet/`: Otomobil & Motosiklet Çok Satanlar sıralamasına ait bağımsız veri havuzu ve raporlar
+- `categories/hamile/`: Hamile Çok Satanlar sıralamasına ait bağımsız veri havuzu ve raporlar
 
 ## İzlenen alanlar
 

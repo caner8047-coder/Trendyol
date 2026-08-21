@@ -58,7 +58,7 @@ function renderTaxonomy() {
     ['Kategori evreni',fmtNumber(catalog.total),`${fmtNumber(catalog.uniqueCategories)} benzersiz kimlik · ${catalog.duplicatePaths} tekrar`],
     ['Derinlik',catalog.maxDepth == null ? '—' : `${catalog.maxDepth + 1} seviye`,`${fmtNumber(catalog.leaves)} uç kategori`],
     ['Son tam kapsama',latest.totalCategories ? `%${latest.coverage}` : 'Bekleniyor',runFresh ? 'bugünün verisi' : (latest.date || 'henüz rapor yok')],
-    ['Benzersiz ürün',fmtNumber(latest.uniqueProducts),`${fmtNumber(latest.rankingMemberships)} sıralama kaydı`],
+    ['Benzersiz ürün',fmtNumber(latest.uniqueProducts),`${fmtNumber(latest.rankingMemberships)} sıra · ${fmtNumber(latest.emptyCategories)} boş kategori`],
     ['Bugünkü ilerleme',`${fmtNumber(today.completedCategories)}/${fmtNumber(catalog.uniqueCategories)}`,today.failedCategories ? `${today.failedCategories} kategori hatalı` : 'işçiler sırayla çalışır']
   ].map(([label,value,detail]) => `<div class="taxonomy-stat"><span>${label}</span><strong>${value}</strong><small>${detail}</small></div>`).join('');
   $('#taxonomyStages').innerHTML = taxonomy.stages.map(stage => {

@@ -190,6 +190,7 @@ function buildTaxonomyStatus(jobByName, executions, today) {
       date: latest.date || null, status: latest.status || 'WAITING', coveredCategories: latest.coveredCategories || 0,
       totalCategories: latest.totalCategories || catalog.stats?.total || 0, coverage: latest.coverage || 0,
       uniqueProducts: latest.uniqueProducts || 0, rankingMemberships: latest.rankingMemberships || 0,
+      categoriesWithProducts: latest.categoriesWithProducts || 0, emptyCategories: latest.emptyCategories || 0,
       failedCategories: latest.failedCategories || 0
     },
     today: { completedCategories: completedToday, failedCategories: failedToday, shards: shardStatuses },

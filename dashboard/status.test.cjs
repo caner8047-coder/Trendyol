@@ -17,6 +17,7 @@ test('canlı durum modeli görev ve kalite verisini birleştirir', () => {
   assert.ok(status.recentEvents.length > 0);
   assert.equal(status.taxonomy.catalog.total, 4003);
   assert.equal(status.taxonomy.catalog.uniqueCategories, 3952);
+  assert.ok(status.taxonomy.latest.emptyCategories >= 0);
   assert.equal(status.taxonomy.catalog.roots, 19);
   assert.equal(status.taxonomy.stages.length, 6);
 });

@@ -41,6 +41,7 @@ function finalize({ shardCount = 4 } = {}) {
   memberships.sort((a, b) => a.categoryId - b.categoryId || a.rank - b.rank || a.productKey.localeCompare(b.productKey));
   const products = [...productMap.values()].sort((a, b) => a.productKey.localeCompare(b.productKey));
   const covered = new Set(successfulCategoryIds);
+  const categoriesWithProducts = new Set(memberships.map(row => row.categoryId));
   const outputDir = path.join(ROOT, 'taxonomy', 'snapshots', date);
   gzipLines(path.join(outputDir, 'rankings.ndjson.gz'), memberships);
   gzipLines(path.join(outputDir, 'products.ndjson.gz'), products);
@@ -57,7 +58,8 @@ function finalize({ shardCount = 4 } = {}) {
     catalogGeneratedAt: catalog.generatedAt, totalCategoryPaths: catalog.stats.total,
     totalCategories: uniqueCategories,
     coveredCategories: covered.size, coverage, uniqueProducts: products.length,
-    rankingMemberships: memberships.length, failedCategories: failures.length,
+    rankingMemberships: memberships.length, categoriesWithProducts: categoriesWithProducts.size,
+    emptyCategories: Math.max(0, covered.size - categoriesWithProducts.size), failedCategories: failures.length,
     roots, levels: catalog.stats.levels, shards: shards.map(item => ({ shard: item.shard, categories: item.totalCategories, successRate: item.successRate, products: item.products.length, memberships: item.memberships.length }))
   };
   writeJsonAtomic(path.join(outputDir, 'summary.json'), summary);
@@ -68,13 +70,14 @@ function finalize({ shardCount = 4 } = {}) {
     `- **Kalite:** ${status}\n- **Kategori kataloğu:** ${formatNumber(catalog.stats.total)} menü yolu, ${formatNumber(uniqueCategories)} benzersiz kategori kimliği, ${catalog.stats.maxDepth + 1} seviye\n` +
     `- **Günlük kapsama:** ${formatNumber(covered.size)}/${formatNumber(uniqueCategories)} benzersiz kategori (%${coverage.toLocaleString('tr-TR')})\n` +
     `- **Benzersiz ürün:** ${formatNumber(products.length)}\n- **Kategori–ürün sıralama kaydı:** ${formatNumber(memberships.length)}\n` +
+    `- **Ürün döndüren kategori:** ${formatNumber(categoriesWithProducts.size)}\n- **Başarılı fakat boş kategori:** ${formatNumber(Math.max(0, covered.size - categoriesWithProducts.size))}\n` +
     `- **Hatalı kategori:** ${formatNumber(failures.length)}\n\n` +
     `## Tarama stratejisi\n\nBütün kategorilerin ilk 20 ürünü her gün izlenir. Ana ve birinci seviye kategoriler günlük 200 ürüne kadar taranır. Daha derin kategoriler 20 günlük dönüşümle sırayla 200 ürüne kadar genişletilir. Böylece bütün ağaç günlük görünür kalırken Trendyol'a ve bilgisayara aşırı yük bindirilmez.\n\n` +
     `## Ana kategori kapsamı\n\n| Ana kategori | Kapsanan / Toplam | Oran |\n|---|---:|---:|\n${rootRows}\n\n` +
     `## Veri dosyaları\n\n- [Kategori kataloğu](../catalog.csv)\n- [Günlük özet](../snapshots/${date}/summary.json)\n- Günlük sıralamalar: \`taxonomy/snapshots/${date}/rankings.ndjson.gz\`\n- Tekilleştirilmiş ürünler: \`taxonomy/snapshots/${date}/products.ndjson.gz\`\n`;
   writeTextAtomic(path.join(ROOT, 'taxonomy', 'reports', `${date}.md`), report);
   writeTextAtomic(path.join(ROOT, 'taxonomy', 'reports', 'latest.md'), report);
-  const telegram = `🌳 Trendyol Çok Satanlar Kategori Evreni — ${date}\n${status === 'PASS' ? '✅' : '⚠️'} ${formatNumber(covered.size)}/${formatNumber(uniqueCategories)} benzersiz kategori (%${coverage.toLocaleString('tr-TR')})\n🗂️ ${formatNumber(catalog.stats.total)} menü yolu · ${formatNumber(catalog.stats.duplicatePaths || 0)} tekrar yol\n📦 ${formatNumber(products.length)} benzersiz ürün · ${formatNumber(memberships.length)} sıralama kaydı\n🧭 ${catalog.stats.maxDepth + 1} seviye · ${catalog.stats.roots} ana kategori\n🔗 https://github.com/caner8047-coder/Trendyol/blob/main/taxonomy/reports/${date}.md\n`;
+  const telegram = `🌳 Trendyol Çok Satanlar Kategori Evreni — ${date}\n${status === 'PASS' ? '✅' : '⚠️'} ${formatNumber(covered.size)}/${formatNumber(uniqueCategories)} benzersiz kategori (%${coverage.toLocaleString('tr-TR')})\n🗂️ ${formatNumber(catalog.stats.total)} menü yolu · ${formatNumber(catalog.stats.duplicatePaths || 0)} tekrar yol\n📦 ${formatNumber(products.length)} benzersiz ürün · ${formatNumber(memberships.length)} sıralama kaydı\n📭 ${formatNumber(Math.max(0, covered.size - categoriesWithProducts.size))} başarılı fakat boş kategori\n🧭 ${catalog.stats.maxDepth + 1} seviye · ${catalog.stats.roots} ana kategori\n🔗 https://github.com/caner8047-coder/Trendyol/blob/main/taxonomy/reports/${date}.md\n`;
   writeTextAtomic(path.join(ROOT, 'taxonomy', 'reports', 'telegram-latest.txt'), telegram);
   if (status !== 'PASS') throw new Error(`Kategori evreni kalite kapısı başarısız: %${coverage}`);
   return summary;

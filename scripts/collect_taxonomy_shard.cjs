@@ -42,7 +42,8 @@ async function collect() {
   const runtimeDir = path.join(ROOT, '.runtime', 'taxonomy', date);
   const statusFile = path.join(runtimeDir, `shard-${shard}.status.json`);
   const startedAt = new Date().toISOString();
-  writeJsonAtomic(statusFile, { schemaVersion: 1, date, shard, shardCount, status: 'running', startedAt, totalCategories: nodes.length, completedCategories: 0, failedCategories: 0, products: 0, memberships: 0 });
+  const catalogRunId = catalog.runId || catalog.generatedAt;
+  writeJsonAtomic(statusFile, { schemaVersion: 2, date, shard, shardCount, status: 'running', startedAt, catalogRunId, catalogGeneratedAt: catalog.generatedAt, totalCategories: nodes.length, completedCategories: 0, failedCategories: 0, products: 0, memberships: 0 });
   const memberships = []; const products = new Map(); const failures = []; const successfulCategoryIds = [];
   let session = null;
   const closeSession = async () => {
@@ -96,7 +97,7 @@ async function collect() {
       } else failures.push({ categoryId: node.categoryId, path: node.path, error: lastError?.message || 'Bilinmeyen hata' });
       if ((categoryIndex + 1) % 10 === 0 || categoryIndex + 1 === nodes.length) {
         writeJsonAtomic(statusFile, {
-          schemaVersion: 1, date, shard, shardCount, status: 'running', startedAt, updatedAt: new Date().toISOString(),
+          schemaVersion: 2, date, shard, shardCount, status: 'running', startedAt, catalogRunId, catalogGeneratedAt: catalog.generatedAt, updatedAt: new Date().toISOString(),
           totalCategories: nodes.length, completedCategories: categoryIndex + 1, failedCategories: failures.length,
           products: products.size, memberships: memberships.length, lastCategory: node.path, lastCategoryProducts: categoryProducts
         });
@@ -108,7 +109,8 @@ async function collect() {
   const successRate = nodes.length ? Math.round((nodes.length - failures.length) / nodes.length * 10000) / 100 : 0;
   const status = successRate >= 95 ? 'PASS' : 'FAIL';
   const result = {
-    schemaVersion: 1, date, capturedAt: timestamp, shard, shardCount, status,
+    schemaVersion: 2, date, capturedAt: timestamp, startedAt, finishedAt: new Date().toISOString(),
+    catalogRunId, catalogGeneratedAt: catalog.generatedAt, shard, shardCount, status,
     totalCategories: nodes.length, completedCategories: nodes.length, failedCategories: failures.length,
     successRate, successfulCategoryIds,
     products: [...products.entries()].map(([productKey, product]) => ({ productKey, ...product })), memberships, failures

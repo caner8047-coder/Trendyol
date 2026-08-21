@@ -21,6 +21,8 @@ function finalize({ shardCount = 4 } = {}) {
   const { date, timestamp } = nowIstanbul();
   const catalog = readJson(path.join(ROOT, 'taxonomy', 'catalog.json'));
   if (!catalog?.nodes?.length) throw new Error('Kategori kataloğu bulunamadı.');
+  const catalogRunId = catalog.runId || catalog.generatedAt;
+  if (!catalogRunId || Number.isNaN(Date.parse(catalog.generatedAt))) throw new Error('Kategori kataloğu çalışma kimliği geçersiz.');
   const runtimeDir = path.join(ROOT, '.runtime', 'taxonomy', date);
   const shards = [];
   for (let shard = 0; shard < shardCount; shard++) {
@@ -28,6 +30,16 @@ function finalize({ shardCount = 4 } = {}) {
     if (!fs.existsSync(file)) throw new Error(`Shard çıktısı eksik: ${file}`);
     const result = readGzipJson(file);
     if (result.status !== 'PASS') throw new Error(`Shard ${shard} kalite durumu ${result.status}`);
+    if (result.date !== date || result.shard !== shard || result.shardCount !== shardCount) {
+      throw new Error(`Shard ${shard} çalışma kapsamı güncel finalle eşleşmiyor.`);
+    }
+    if (result.catalogRunId !== catalogRunId || result.catalogGeneratedAt !== catalog.generatedAt) {
+      throw new Error(`Shard ${shard} güncel kategori kataloğuyla eşleşmiyor.`);
+    }
+    const shardStartedAt = result.startedAt || result.capturedAt;
+    if (!shardStartedAt || Date.parse(shardStartedAt) < Date.parse(catalog.generatedAt)) {
+      throw new Error(`Shard ${shard} kategori keşfinden önce üretilmiş.`);
+    }
     shards.push(result);
   }
   const productMap = new Map(); const membershipMap = new Map(); const failures = []; const successfulCategoryIds = [];
@@ -54,8 +66,8 @@ function finalize({ shardCount = 4 } = {}) {
   const coverage = Math.round(covered.size / uniqueCategories * 10000) / 100;
   const status = failures.length <= Math.ceil(uniqueCategories * 0.05) && coverage >= 95 ? 'PASS' : 'FAIL';
   const summary = {
-    schemaVersion: 1, date, generatedAt: timestamp, status,
-    catalogGeneratedAt: catalog.generatedAt, totalCategoryPaths: catalog.stats.total,
+    schemaVersion: 2, date, generatedAt: timestamp, status,
+    catalogRunId, catalogGeneratedAt: catalog.generatedAt, totalCategoryPaths: catalog.stats.total,
     totalCategories: uniqueCategories,
     coveredCategories: covered.size, coverage, uniqueProducts: products.length,
     rankingMemberships: memberships.length, categoriesWithProducts: categoriesWithProducts.size,

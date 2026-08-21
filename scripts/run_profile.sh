@@ -36,19 +36,13 @@ if ! run_collector; then
 fi
 "$NODE_BIN" scripts/quality_check.cjs --profile "$PROFILE"
 
-if [[ "$PROFILE" == "cocuk" ]]; then
-  git add data snapshots lists reports quality
-else
-  git add "categories/$PROFILE"
-fi
-if git diff --cached --quiet; then
-  echo "Yeni veri değişikliği yok: $PROFILE"
-  exit 0
-fi
-
 run_date=$(TZ=Europe/Istanbul date +%F)
-git commit -m "data: Trendyol ${PROFILE} günlük raporu ${run_date}"
-"$PYTHON_BIN" scripts/run_with_timeout.py --timeout 180 --heartbeat 30 -- \
-  git push origin HEAD:main
+if [[ "$PROFILE" == "cocuk" ]]; then
+  scripts/publish_paths_to_main.sh "data: Trendyol ${PROFILE} günlük raporu ${run_date}" \
+    data snapshots lists reports quality
+else
+  scripts/publish_paths_to_main.sh "data: Trendyol ${PROFILE} günlük raporu ${run_date}" \
+    "categories/$PROFILE"
+fi
 
 echo "DAILY_RUN_OK ${PROFILE} ${run_date}"

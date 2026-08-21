@@ -31,7 +31,7 @@ async function discover() {
     const levels = Object.fromEntries([...new Set(nodes.map(node => node.level))].sort((a, b) => a - b).map(level => [level, nodes.filter(node => node.level === level).length]));
     const uniqueCategoryIds = new Set(nodes.map(node => node.categoryId));
     const catalog = {
-      schemaVersion: 1, sourceUrl: ROOT_URL, generatedAt: timestamp,
+      schemaVersion: 2, runId: timestamp, sourceUrl: ROOT_URL, generatedAt: timestamp,
       stats: {
         total: nodes.length, uniqueCategoryIds: uniqueCategoryIds.size, duplicatePaths: nodes.length - uniqueCategoryIds.size,
         roots: nodes.filter(node => node.level === 0).length, leaves: nodes.filter(node => !node.hasChildren).length,

@@ -1,0 +1,37 @@
+name: Veri Mimari kategori evreni yayini
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - taxonomy/catalog.json
+      - taxonomy/status.json
+      - taxonomy/snapshots/**/summary.json
+      - taxonomy/snapshots/**/products.ndjson.gz
+      - taxonomy/snapshots/**/rankings.ndjson.gz
+      - scripts/publish_taxonomy_website.cjs
+      - .github/workflows/publish-taxonomy.yml
+  workflow_dispatch:
+
+concurrency:
+  group: veri-mimari-taxonomy-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Publish validated taxonomy snapshot
+        env:
+          VERI_MIMARI_INGEST_URL: ${{ secrets.VERI_MIMARI_INGEST_URL }}
+          VERI_MIMARI_INGEST_SECRET: ${{ secrets.VERI_MIMARI_INGEST_SECRET }}
+          TAXONOMY_PUBLISH_BATCH_SIZE: 500
+          TAXONOMY_PUBLISH_CONCURRENCY: 6
+        run: node scripts/publish_taxonomy_website.cjs

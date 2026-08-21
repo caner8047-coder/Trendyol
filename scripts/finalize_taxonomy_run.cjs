@@ -30,14 +30,15 @@ function finalize({ shardCount = 4 } = {}) {
     if (result.status !== 'PASS') throw new Error(`Shard ${shard} kalite durumu ${result.status}`);
     shards.push(result);
   }
-  const productMap = new Map(); const memberships = []; const failures = [];
+  const productMap = new Map(); const memberships = []; const failures = []; const successfulCategoryIds = [];
   for (const shard of shards) {
     for (const product of shard.products) productMap.set(product.productKey, product);
     memberships.push(...shard.memberships); failures.push(...shard.failures);
+    successfulCategoryIds.push(...(shard.successfulCategoryIds || shard.memberships.map(row => row.categoryId)));
   }
   memberships.sort((a, b) => a.categoryId - b.categoryId || a.rank - b.rank || a.productKey.localeCompare(b.productKey));
   const products = [...productMap.values()].sort((a, b) => a.productKey.localeCompare(b.productKey));
-  const covered = new Set(memberships.map(row => row.categoryId));
+  const covered = new Set(successfulCategoryIds);
   const outputDir = path.join(ROOT, 'taxonomy', 'snapshots', date);
   gzipLines(path.join(outputDir, 'rankings.ndjson.gz'), memberships);
   gzipLines(path.join(outputDir, 'products.ndjson.gz'), products);

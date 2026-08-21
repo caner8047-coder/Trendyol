@@ -38,29 +38,57 @@ async function collect() {
   const statusFile = path.join(runtimeDir, `shard-${shard}.status.json`);
   const startedAt = new Date().toISOString();
   writeJsonAtomic(statusFile, { schemaVersion: 1, date, shard, shardCount, status: 'running', startedAt, totalCategories: nodes.length, completedCategories: 0, failedCategories: 0, products: 0, memberships: 0 });
-  const { browser, context } = await launchBrowser();
-  const memberships = []; const products = new Map(); const failures = [];
+  const memberships = []; const products = new Map(); const failures = []; const successfulCategoryIds = [];
+  let session = null;
+  const closeSession = async () => {
+    if (!session) return;
+    await session.context.close().catch(() => {});
+    await session.browser.close().catch(() => {});
+    session = null;
+  };
+  const renewSession = async reason => {
+    await closeSession();
+    const launched = await launchBrowser();
+    const page = await prepareRankingPage(launched.context);
+    session = { ...launched, page };
+    console.log(`TAXONOMY_SESSION_READY shard=${shard} reason=${reason}`);
+  };
   try {
-    const page = await prepareRankingPage(context);
+    await renewSession('initial');
     for (let categoryIndex = 0; categoryIndex < nodes.length; categoryIndex++) {
+      if (categoryIndex > 0 && categoryIndex % 60 === 0) await renewSession('periodic');
       const node = nodes[categoryIndex];
       const pages = categoryPages(node, date, { pages: forcedPages || null });
       let categoryProducts = 0;
-      try {
-        for (let pageNumber = 1; pageNumber <= pages; pageNumber++) {
-          const items = await fetchRankingPage(page, node.categoryId, pageNumber);
-          for (let index = 0; index < items.length; index++) {
-            const product = normalizeProduct(items[index]);
-            if (!product.productId) continue;
-            const productKey = `${product.productId}:${product.merchantId}`;
-            products.set(productKey, product);
-            memberships.push({ categoryId: node.categoryId, rank: (pageNumber - 1) * 20 + index + 1, productKey });
-            categoryProducts++;
+      let categoryResult = null; let lastError = null;
+      for (let attempt = 1; attempt <= 2 && !categoryResult; attempt++) {
+        try {
+          const categoryMemberships = []; const categoryProductsByKey = new Map();
+          for (let pageNumber = 1; pageNumber <= pages; pageNumber++) {
+            const items = await fetchRankingPage(session.page, node.categoryId, pageNumber);
+            for (let index = 0; index < items.length; index++) {
+              const product = normalizeProduct(items[index]);
+              if (!product.productId) continue;
+              const productKey = `${product.productId}:${product.merchantId}`;
+              categoryProductsByKey.set(productKey, product);
+              categoryMemberships.push({ categoryId: node.categoryId, rank: (pageNumber - 1) * 20 + index + 1, productKey });
+            }
+            if (items.length < 20) break;
+            await sleep(260);
           }
-          if (items.length < 20) break;
-          await sleep(220);
+          categoryResult = { memberships: categoryMemberships, products: categoryProductsByKey };
+        } catch (error) {
+          lastError = error;
+          console.warn(`TAXONOMY_CATEGORY_RETRY shard=${shard} category=${node.categoryId} attempt=${attempt} error=${JSON.stringify(error.message)}`);
+          if (attempt < 2) { await sleep(900); await renewSession('category-retry'); }
         }
-      } catch (error) { failures.push({ categoryId: node.categoryId, path: node.path, error: error.message }); }
+      }
+      if (categoryResult) {
+        successfulCategoryIds.push(node.categoryId);
+        memberships.push(...categoryResult.memberships);
+        for (const [key, product] of categoryResult.products) products.set(key, product);
+        categoryProducts = categoryResult.memberships.length;
+      } else failures.push({ categoryId: node.categoryId, path: node.path, error: lastError?.message || 'Bilinmeyen hata' });
       if ((categoryIndex + 1) % 10 === 0 || categoryIndex + 1 === nodes.length) {
         writeJsonAtomic(statusFile, {
           schemaVersion: 1, date, shard, shardCount, status: 'running', startedAt, updatedAt: new Date().toISOString(),
@@ -69,15 +97,16 @@ async function collect() {
         });
         console.log(`TAXONOMY_SHARD_PROGRESS shard=${shard} completed=${categoryIndex + 1}/${nodes.length} failures=${failures.length} memberships=${memberships.length}`);
       }
-      await sleep(280);
+      await sleep(360);
     }
-  } finally { await context.close(); await browser.close(); }
+  } finally { await closeSession(); }
   const successRate = nodes.length ? Math.round((nodes.length - failures.length) / nodes.length * 10000) / 100 : 0;
   const status = successRate >= 95 ? 'PASS' : 'FAIL';
   const result = {
     schemaVersion: 1, date, capturedAt: timestamp, shard, shardCount, status,
     totalCategories: nodes.length, completedCategories: nodes.length, failedCategories: failures.length,
-    successRate, products: [...products.entries()].map(([productKey, product]) => ({ productKey, ...product })), memberships, failures
+    successRate, successfulCategoryIds,
+    products: [...products.entries()].map(([productKey, product]) => ({ productKey, ...product })), memberships, failures
   };
   writeGzipJsonAtomic(path.join(runtimeDir, `shard-${shard}.json.gz`), result);
   writeJsonAtomic(statusFile, { ...result, products: products.size, memberships: memberships.length, finishedAt: new Date().toISOString(), failures: failures.slice(0, 50) });

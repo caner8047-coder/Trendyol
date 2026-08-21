@@ -7,6 +7,8 @@
 - **Günlük kapsama:** 3.952/3.952 benzersiz kategori (%100)
 - **Benzersiz ürün:** 67.232
 - **Kategori–ürün sıralama kaydı:** 83.963
+- **Ürün döndüren kategori:** 3.678
+- **Başarılı fakat boş kategori:** 274
 - **Hatalı kategori:** 0
 
 ## Tarama stratejisi

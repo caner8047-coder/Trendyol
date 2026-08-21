@@ -101,7 +101,7 @@ Servis yönetimi için LaunchAgent etiketi `com.caner.trendyol-dashboard`'dur. D
 
 ## Otomatik Çok Satanlar kategori evreni
 
-`taxonomy/` hattı, Trendyol Çok Satanlar menüsünü yalnız görünen ana sekmelerle sınırlamadan bütün alt dallarıyla keşfeder. Kategori bağlantılarının elle verilmesi gerekmez. Güncel katalog 19 ana kategori altında 4.003 kategori/alt kategori ve 6 seviye içerir; Trendyol ağaca yeni bir dal eklediğinde günlük keşif görevi bunu otomatik kataloğa alır.
+`taxonomy/` hattı, Trendyol Çok Satanlar menüsünü yalnız görünen ana sekmelerle sınırlamadan bütün alt dallarıyla keşfeder. Kategori bağlantılarının elle verilmesi gerekmez. Güncel katalog 19 ana kategori altında 4.003 menü yolu, 3.952 benzersiz kategori kimliği ve 6 seviye içerir. Aynı kategori 51 farklı ek menü yolunda tekrar görünür; veri havuzunda ürün sıralamaları kategori kimliğine göre tekilleştirilir. Trendyol ağaca yeni bir dal eklediğinde günlük keşif görevi bunu otomatik kataloğa alır.
 
 Yük ve veri değeri dengesi:
 

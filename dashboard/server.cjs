@@ -1,0 +1,325 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const http = require('http');
+const path = require('path');
+const os = require('os');
+const { execFileSync } = require('child_process');
+
+const ROOT = path.resolve(__dirname, '..');
+const PUBLIC_DIR = path.join(__dirname, 'public');
+const HERMES_CRON_DIR = path.join(os.homedir(), '.hermes', 'cron');
+const JOBS_FILE = path.join(HERMES_CRON_DIR, 'jobs.json');
+const EXECUTIONS_DB = path.join(HERMES_CRON_DIR, 'executions.db');
+const LOG_DIR = path.join(ROOT, '.runtime', 'cron-logs');
+const HOST = process.env.DASHBOARD_HOST || '127.0.0.1';
+const PORT = Number(process.env.DASHBOARD_PORT || 4317);
+const TIMEZONE = 'Europe/Istanbul';
+const GITHUB_BASE = 'https://github.com/caner8047-coder/Trendyol/blob/main';
+
+let statusCache = { expiresAt: 0, value: null };
+
+function readJson(file, fallback = null) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
+  catch { return fallback; }
+}
+
+function run(command, args, fallback = '') {
+  try {
+    return execFileSync(command, args, { cwd: ROOT, encoding: 'utf8', timeout: 5000 }).trim();
+  } catch { return fallback; }
+}
+
+function git(args, fallback = '') { return run('/usr/bin/git', args, fallback); }
+
+function istanbulDate(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(date);
+}
+
+function isoOrNull(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function durationSeconds(start, finish) {
+  const a = new Date(start || 0).getTime();
+  const b = new Date(finish || 0).getTime();
+  return a && b && b >= a ? Math.round((b - a) / 1000) : null;
+}
+
+function cronTime(display, fallback) {
+  const match = String(display || '').match(/^(\d{1,2})\s+(\d{1,2})\s+/);
+  if (!match) return fallback || '--:--';
+  return `${String(match[2]).padStart(2, '0')}:${String(match[1]).padStart(2, '0')}`;
+}
+
+function profileLabel(config) {
+  return String(config.telegramTitle || config.name || config.profile)
+    .replace(/^Trendyol\s+/i, '')
+    .replace(/\s+Günlük Raporu$/i, '')
+    .replace(/\s+(?:En\s+)?Çok\s+Satan(?:lar|\s+Ürünler)$/i, '')
+    .trim();
+}
+
+function discoverProfiles() {
+  const configs = [{ file: path.join(ROOT, 'config.json'), root: ROOT }];
+  const profileDir = path.join(ROOT, 'profiles');
+  if (fs.existsSync(profileDir)) {
+    for (const file of fs.readdirSync(profileDir).filter(name => name.endsWith('.json')).sort()) {
+      const config = readJson(path.join(profileDir, file));
+      if (config?.profile) configs.push({ file: path.join(profileDir, file), root: path.join(ROOT, 'categories', config.profile) });
+    }
+  }
+  return configs.map(item => {
+    const config = readJson(item.file, {});
+    return { slug: config.profile, label: profileLabel(config), config, root: item.root };
+  }).filter(profile => profile.slug);
+}
+
+function readExecutions() {
+  if (!fs.existsSync(EXECUTIONS_DB)) return [];
+  const sql = `SELECT id, job_id, source, status, claimed_at, started_at, finished_at, substr(error,1,1200) AS error FROM executions ORDER BY claimed_at DESC LIMIT 300;`;
+  const output = run('/usr/bin/sqlite3', ['-json', EXECUTIONS_DB, sql], '[]');
+  try { return JSON.parse(output || '[]'); }
+  catch { return []; }
+}
+
+function latestLog(slug) {
+  if (!fs.existsSync(LOG_DIR)) return { path: null, updatedAt: null, tail: '' };
+  const candidates = fs.readdirSync(LOG_DIR)
+    .filter(name => name.startsWith(`${slug}-`) && name.endsWith('.log'))
+    .map(name => {
+      const file = path.join(LOG_DIR, name);
+      return { file, mtime: fs.statSync(file).mtimeMs };
+    })
+    .sort((a, b) => b.mtime - a.mtime);
+  if (!candidates.length) return { path: null, updatedAt: null, tail: '' };
+  const selected = candidates[0];
+  const lines = fs.readFileSync(selected.file, 'utf8').split(/\r?\n/).filter(Boolean);
+  return {
+    path: selected.file,
+    updatedAt: new Date(selected.mtime).toISOString(),
+    tail: lines.slice(-40).join('\n')
+  };
+}
+
+function progressFromLog(text) {
+  const detail = [...String(text).matchAll(/DETAIL_PROGRESS[^\n]*completed=(\d+)\/(\d+)[^\n]*refreshed=(\d+)/g)].pop();
+  if (detail) return { phase: 'detail', current: Number(detail[1]), total: Number(detail[2]), refreshed: Number(detail[3]), percent: Math.round(Number(detail[1]) / Number(detail[2]) * 100) };
+  const listing = [...String(text).matchAll(/LISTING_PROGRESS[^\n]*total=(\d+)/g)].pop();
+  if (listing) return { phase: 'listing', current: Number(listing[1]), total: 200, refreshed: 0, percent: Math.min(100, Math.round(Number(listing[1]) / 2)) };
+  if (/DAILY_RUN_OK/.test(text)) return { phase: 'done', current: 200, total: 200, refreshed: 200, percent: 100 };
+  return null;
+}
+
+function errorSummary(error) {
+  const text = String(error || '');
+  if (!text) return null;
+  if (/send_path_degraded|Telegram send failed|delivery.*telegram/i.test(text)) return 'Telegram bildirimi gönderilemedi.';
+  if (/ERR_TIMED_OUT|Timeout \d+ms|zaman aşımı/i.test(text)) return 'Trendyol bağlantısı zaman aşımına uğradı.';
+  if (/kalite kapısı|quality.*fail/i.test(text)) return 'Veri kalite kapısı çalışmayı reddetti.';
+  if (/git push|fetch first|non-fast-forward/i.test(text)) return 'GitHub gönderimi tamamlanamadı.';
+  if (/provider timeout/i.test(text)) return 'Model sağlayıcısı zaman aşımına uğradı.';
+  return text.split(/\r?\n/).find(line => line.trim())?.slice(0, 180) || 'Bilinmeyen hata';
+}
+
+function historyFor(jobId, executions, days = 7) {
+  const result = [];
+  for (let offset = days - 1; offset >= 0; offset--) {
+    const day = new Date();
+    day.setDate(day.getDate() - offset);
+    const key = istanbulDate(day);
+    const runForDay = executions
+      .filter(item => item.job_id === jobId && istanbulDate(item.started_at || item.claimed_at) === key)
+      .sort((a, b) => String(b.started_at || b.claimed_at).localeCompare(String(a.started_at || a.claimed_at)))[0];
+    result.push({ date: key, status: runForDay?.status || 'none', durationSeconds: runForDay ? durationSeconds(runForDay.started_at, runForDay.finished_at) : null });
+  }
+  return result;
+}
+
+function commitFor(profile) {
+  const relative = profile.slug === 'cocuk' ? 'data/latest.json' : `categories/${profile.slug}/data/latest.json`;
+  const line = git(['log', '-1', '--format=%H|%cI|%s', 'origin/main', '--', relative]);
+  if (!line) return null;
+  const [hash, committedAt, ...subject] = line.split('|');
+  return { hash, shortHash: hash.slice(0, 7), committedAt, subject: subject.join('|') };
+}
+
+function buildStatus({ bypassCache = false } = {}) {
+  if (!bypassCache && statusCache.value && statusCache.expiresAt > Date.now()) return statusCache.value;
+  const jobsData = readJson(JOBS_FILE, { jobs: [], updated_at: null });
+  const jobs = (jobsData.jobs || []).filter(job => String(job.name || '').startsWith('trendyol-') && job.workdir === ROOT);
+  const jobByName = new Map(jobs.map(job => [job.name, job]));
+  const executions = readExecutions();
+  const today = istanbulDate();
+  const profiles = discoverProfiles().map(profile => {
+    const job = jobByName.get(`trendyol-${profile.slug}-daily-intelligence`) || null;
+    const quality = readJson(path.join(profile.root, 'quality', 'latest.json'), {});
+    const log = latestLog(profile.slug);
+    const relatedExecutions = executions.filter(item => item.job_id === job?.id);
+    const latestExecution = relatedExecutions[0] || null;
+    const running = ['claimed', 'running'].includes(latestExecution?.status);
+    const fresh = quality.date === today;
+    const qualityPass = quality.status === 'PASS';
+    const lastStatus = running ? 'running' : job?.last_status || latestExecution?.status || 'waiting';
+    let health = 'healthy';
+    if (!job || job.enabled === false) health = 'paused';
+    else if (running) health = 'running';
+    else if (lastStatus === 'error' || lastStatus === 'failed') health = 'failed';
+    else if (!qualityPass || !fresh) health = 'warning';
+    const reportRelative = profile.slug === 'cocuk' ? `reports/${quality.date || 'latest'}.md` : `categories/${profile.slug}/reports/${quality.date || 'latest'}.md`;
+    const progress = running ? progressFromLog(log.tail) : null;
+    return {
+      slug: profile.slug,
+      label: profile.label,
+      sourceLabel: profile.config.sourceLabel || profile.config.name,
+      schedule: cronTime(job?.schedule_display, profile.config.dailyRunTime),
+      cron: job?.schedule_display || null,
+      jobId: job?.id || null,
+      enabled: job?.enabled !== false,
+      state: job?.state || 'missing',
+      health,
+      lastStatus,
+      lastRunAt: isoOrNull(job?.last_run_at || latestExecution?.started_at),
+      nextRunAt: isoOrNull(job?.next_run_at),
+      delivery: job?.last_delivery_error ? 'failed' : (job?.last_status === 'ok' && job?.deliver === 'telegram' ? 'delivered' : 'unknown'),
+      deliveryError: errorSummary(job?.last_delivery_error),
+      error: errorSummary(job?.last_error || latestExecution?.error),
+      quality: {
+        status: quality.status || 'MISSING',
+        date: quality.date || null,
+        productCount: quality.productCount || 0,
+        detailSuccessRate: quality.detailSuccessRate || 0,
+        coreCoverage: quality.coreCoverage || 0,
+        coverage: quality.coverage || {},
+        lowCoverageFields: quality.lowCoverageFields || []
+      },
+      fresh,
+      progress,
+      history: historyFor(job?.id, executions),
+      reportUrl: `/report/${profile.slug}`,
+      logUrl: `/log/${profile.slug}`,
+      githubUrl: `${GITHUB_BASE}/${reportRelative}`,
+      commit: commitFor(profile),
+      latestLog: { updatedAt: log.updatedAt, tail: log.tail }
+    };
+  }).sort((a, b) => a.schedule.localeCompare(b.schedule));
+
+  const nextProfile = profiles.filter(item => item.nextRunAt).sort((a, b) => a.nextRunAt.localeCompare(b.nextRunAt))[0] || null;
+  const todayRuns = profiles.filter(item => item.lastRunAt && istanbulDate(item.lastRunAt) === today);
+  const recentEvents = executions
+    .filter(item => jobs.some(job => job.id === item.job_id))
+    .slice(0, 24)
+    .map(item => {
+      const job = jobs.find(candidate => candidate.id === item.job_id);
+      const profile = profiles.find(candidate => candidate.jobId === item.job_id);
+      return {
+        id: item.id,
+        profile: profile?.slug || null,
+        label: profile?.label || job?.name || item.job_id,
+        status: item.status,
+        startedAt: isoOrNull(item.started_at || item.claimed_at),
+        finishedAt: isoOrNull(item.finished_at),
+        durationSeconds: durationSeconds(item.started_at, item.finished_at),
+        error: errorSummary(item.error)
+      };
+    });
+  const remoteHead = git(['rev-parse', 'origin/main']);
+  const remoteInfo = git(['log', '-1', '--format=%cI|%s', 'origin/main']);
+  const [remoteUpdatedAt, ...remoteSubject] = remoteInfo.split('|');
+  const value = {
+    generatedAt: new Date().toISOString(),
+    timezone: TIMEZONE,
+    today,
+    summary: {
+      total: profiles.length,
+      healthy: profiles.filter(item => item.health === 'healthy').length,
+      failed: profiles.filter(item => item.health === 'failed').length,
+      warning: profiles.filter(item => item.health === 'warning').length,
+      running: profiles.filter(item => item.health === 'running').length,
+      completedToday: todayRuns.filter(item => item.lastStatus === 'ok').length,
+      totalProducts: profiles.reduce((sum, item) => sum + Number(item.quality.productCount || 0), 0),
+      next: nextProfile ? { slug: nextProfile.slug, label: nextProfile.label, at: nextProfile.nextRunAt, schedule: nextProfile.schedule } : null
+    },
+    repository: {
+      branch: git(['branch', '--show-current']),
+      remoteHead,
+      shortHead: remoteHead.slice(0, 7),
+      updatedAt: isoOrNull(remoteUpdatedAt),
+      subject: remoteSubject.join('|'),
+      github: 'https://github.com/caner8047-coder/Trendyol'
+    },
+    scheduler: {
+      updatedAt: isoOrNull(jobsData.updated_at),
+      heartbeat: fs.existsSync(path.join(HERMES_CRON_DIR, 'ticker_heartbeat')) ? fs.readFileSync(path.join(HERMES_CRON_DIR, 'ticker_heartbeat'), 'utf8').trim() : null,
+      lastSuccess: fs.existsSync(path.join(HERMES_CRON_DIR, 'ticker_last_success')) ? fs.readFileSync(path.join(HERMES_CRON_DIR, 'ticker_last_success'), 'utf8').trim() : null
+    },
+    profiles,
+    recentEvents
+  };
+  statusCache = { expiresAt: Date.now() + 5000, value };
+  return value;
+}
+
+function send(res, status, body, contentType = 'text/plain; charset=utf-8') {
+  res.writeHead(status, {
+    'Content-Type': contentType,
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Security-Policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'"
+  });
+  res.end(body);
+}
+
+function serveStatic(res, pathname) {
+  const requested = pathname === '/' ? 'index.html' : pathname.slice(1);
+  const file = path.resolve(PUBLIC_DIR, requested);
+  if (!file.startsWith(`${PUBLIC_DIR}${path.sep}`) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return false;
+  const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml' };
+  send(res, 200, fs.readFileSync(file), types[path.extname(file)] || 'application/octet-stream');
+  return true;
+}
+
+function profileFile(slug, kind) {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null;
+  const profile = discoverProfiles().find(item => item.slug === slug);
+  if (!profile) return null;
+  if (kind === 'report') return path.join(profile.root, 'reports', 'latest.md');
+  if (kind === 'log') return latestLog(slug).path;
+  return null;
+}
+
+function requestHandler(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
+  if (req.method !== 'GET') return send(res, 405, 'Yalnız GET desteklenir.');
+  if (url.pathname === '/api/status') {
+    try { return send(res, 200, JSON.stringify(buildStatus({ bypassCache: url.searchParams.has('fresh') })), 'application/json; charset=utf-8'); }
+    catch (error) { return send(res, 500, JSON.stringify({ error: error.message }), 'application/json; charset=utf-8'); }
+  }
+  const reportMatch = url.pathname.match(/^\/report\/([a-z0-9-]+)$/);
+  if (reportMatch) {
+    const file = profileFile(reportMatch[1], 'report');
+    return file && fs.existsSync(file) ? send(res, 200, fs.readFileSync(file), 'text/markdown; charset=utf-8') : send(res, 404, 'Rapor bulunamadı.');
+  }
+  const logMatch = url.pathname.match(/^\/log\/([a-z0-9-]+)$/);
+  if (logMatch) {
+    const file = profileFile(logMatch[1], 'log');
+    return file && fs.existsSync(file) ? send(res, 200, fs.readFileSync(file), 'text/plain; charset=utf-8') : send(res, 404, 'Log bulunamadı.');
+  }
+  if (serveStatic(res, url.pathname)) return;
+  return send(res, 404, 'Sayfa bulunamadı.');
+}
+
+function startServer() {
+  const server = http.createServer(requestHandler);
+  server.listen(PORT, HOST, () => console.log(`DASHBOARD_READY http://${HOST}:${PORT}`));
+  return server;
+}
+
+module.exports = { ROOT, buildStatus, cronTime, errorSummary, progressFromLog, discoverProfiles, startServer };
+if (require.main === module) startServer();

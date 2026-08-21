@@ -77,3 +77,24 @@ Başarılı günlük görüntüler `scripts/publish_website.cjs` ile Veri Mimar�
 Web sitesi tarafı aynı sır ile isteği doğrular, veriyi idempotent biçimde kaydeder ve ilgili sayfa önbelleğini yeniler. GitHub deposu ham arşiv ve denetim kaynağı olarak kalır.
 
 Günlük profil çalışmaları tek bir global kilitle sıralanır; aynı anda iki profil veya iki Git işlemi çalışamaz. Toplayıcı 30 saniyede bir heartbeat üretir ve her deneme 20 dakikalık kesin süre sınırıyla korunur. Süre aşılırsa tüm alt süreç grubu kapatılır; arkada yetim Chrome/Node süreci bırakılmaz. Hermes görevleri `no-agent` modunda çalışır: veri üretimi modele bağlı değildir ve Telegram'a yalnız doğrulanmış kısa rapor iletilir.
+
+## Yerel operasyon dashboard'u
+
+`http://127.0.0.1:4317` adresindeki **Trendyol Operasyon Merkezi**, bütün günlük görevleri tek ekranda izler. Sayfa yalnız bu Mac'ten erişilir ve 15 saniyede bir otomatik yenilenir.
+
+- Günlük görev saatleri ve sıradaki çalışma
+- Başarılı, hatalı, çalışan veya veri tarihi eski görevler
+- Son 7 günlük çalışma matrisi ve süreler
+- Ürün sayısı, detay başarısı, stok/satıcı/puan/yorum/soru/teslimat kapsamı
+- Telegram teslim durumu, GitHub commit'i, yerel rapor ve teknik log bağlantıları
+- Devam eden işlerde listeleme/detay ilerlemesi
+
+Kurulum ve kullanım:
+
+```bash
+npm run dashboard:install   # Mac açılışında otomatik başlatır
+npm run dashboard:open      # Sayfayı varsayılan tarayıcıda açar
+npm run dashboard:test      # API/veri modeli kontrollerini çalıştırır
+```
+
+Servis yönetimi için LaunchAgent etiketi `com.caner.trendyol-dashboard`'dur. Dashboard salt okunurdur; görev çalıştırmaz, durdurmaz veya veri dosyalarını değiştirmez.

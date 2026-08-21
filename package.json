@@ -29,6 +29,10 @@
     "quality:hamile": "node scripts/quality_check.cjs --profile hamile",
     "quality:hobi": "node scripts/quality_check.cjs --profile hobi",
     "test:contract": "node --test scripts/collect.contract.test.cjs scripts/publish_website.test.cjs",
-    "publish:website": "node scripts/publish_website.cjs"
+    "publish:website": "node scripts/publish_website.cjs",
+    "dashboard": "node dashboard/server.cjs",
+    "dashboard:test": "node --test dashboard/status.test.cjs",
+    "dashboard:install": "bash scripts/install_dashboard_launch_agent.sh",
+    "dashboard:open": "bash scripts/open_dashboard.sh"
   }
 }

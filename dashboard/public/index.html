@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Trendyol Operasyon Merkezi</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Ana sayfa">
+      <span class="brand-mark">T</span>
+      <span><strong>Trendyol</strong><small>Operasyon Merkezi</small></span>
+    </a>
+    <div class="top-actions">
+      <span class="live-pill"><i></i> Yerel ve canlı</span>
+      <span id="clock" class="clock">--:--:--</span>
+      <button id="refreshButton" class="button ghost" type="button">Şimdi yenile</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">GÜNLÜK PAZAR VERİSİ ALTYAPISI</p>
+        <h1>Bütün görevler,<br><span>tek kontrol ekranında.</span></h1>
+        <p class="hero-copy">Hermes zamanlaması, Trendyol veri kalitesi, Telegram teslimi ve GitHub arşivi 15 saniyede bir yerelden kontrol edilir.</p>
+      </div>
+      <div id="nextRun" class="next-run skeleton"></div>
+    </section>
+
+    <section id="alertArea" aria-live="polite"></section>
+    <section id="summaryCards" class="summary-grid" aria-label="Genel durum"></section>
+
+    <section class="panel schedule-panel">
+      <div class="section-head">
+        <div><p class="eyebrow">GÜNLÜK AKIŞ</p><h2>Saat planı</h2></div>
+        <p id="lastUpdated" class="muted">Veri bekleniyor…</p>
+      </div>
+      <div id="timeline" class="timeline"></div>
+    </section>
+
+    <section class="jobs-section">
+      <div class="section-head jobs-head">
+        <div><p class="eyebrow">KATEGORİLER</p><h2>Görev sağlık durumu</h2></div>
+        <div class="filters" role="group" aria-label="Görev filtresi">
+          <button class="filter active" data-filter="all">Tümü</button>
+          <button class="filter" data-filter="attention">Dikkat gereken</button>
+          <button class="filter" data-filter="running">Çalışan</button>
+        </div>
+      </div>
+      <div id="jobGrid" class="job-grid"></div>
+    </section>
+
+    <section class="lower-grid">
+      <article class="panel">
+        <div class="section-head"><div><p class="eyebrow">SON 7 GÜN</p><h2>Çalışma geçmişi</h2></div><span class="legend"><i class="ok"></i> Başarılı <i class="bad"></i> Hata <i class="none"></i> Kayıt yok</span></div>
+        <div id="historyMatrix" class="history-matrix"></div>
+      </article>
+      <article class="panel">
+        <div class="section-head"><div><p class="eyebrow">CANLI AKIŞ</p><h2>Son işlemler</h2></div><a id="githubLink" class="text-link" href="#" target="_blank" rel="noreferrer">GitHub deposu ↗</a></div>
+        <div id="eventList" class="event-list"></div>
+      </article>
+    </section>
+
+    <footer><span>Yalnız bu Mac’ten erişilir · 127.0.0.1</span><span id="refreshCountdown">15 sn sonra yenilenecek</span></footer>
+  </main>
+
+  <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+  <aside id="detailDrawer" class="drawer" aria-hidden="true">
+    <button id="drawerClose" class="drawer-close" aria-label="Kapat">×</button>
+    <div id="drawerContent"></div>
+  </aside>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

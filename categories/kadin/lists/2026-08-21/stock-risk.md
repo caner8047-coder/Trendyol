@@ -1,0 +1,9 @@
+# Stok Riski — 2026-08-21
+
+| Kapsam içi sıra | Sıra Δ | Trend | Niche | Ürün | Marka | Satıcı | Fiyat TL | Stok | Puan | Yorum | Soru | Detay | Yaş (gün) | Kampanya |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 10 | 15 | 142.6 | 70 | [New Well Ter Önleyici Beyazlatıcı Roll-on 50 ml](https://www.trendyol.com/new-well/ter-onleyici-beyazlatici-roll-on-50-ml-p-716412326?boutiqueId=61&merchantId=634825) | New Well | FASİA | 220 | InStock | 4.5 | 16633 | 1999 | refreshed |  | Son 10 Günün En Düşük Fiyatı; Kargo Bedava; Son 10 günün en düşük fiyatı |
+| 32 | 4 | 49.3 | 34.9 | [Genel Markalar Kadın Erkek Şeffaf Kaymaz Taban Deniz Plaj Ayakkabısı](https://www.trendyol.com/genel-markalar/kadin-erkek-seffaf-kaymaz-taban-deniz-plaj-ayakkabisi-p-824884209?boutiqueId=61&merchantId=1082474) | Genel Markalar | SOLER TİCARET | 175 | InStock | 4.3 | - | 151 | refreshed |  | Kargo Bedava |
+| 56 | -29 | 36.7 | 22.5 | [Penti İz Bırakmaz Dikişsiz Invisible Balensiz Sütyen](https://www.trendyol.com/penti/iz-birakmaz-dikissiz-invisible-balensiz-sutyen-p-148789432?boutiqueId=61&merchantId=978381) | Penti | KAVRAZ SPOR | 1119 | InStock | 4.6 | 3524 | 2032 | refreshed |  | Kargo Bedava; Peşin Fiyatına 3 Taksit |
+| 94 | -24 | 34.9 | 10.4 | [Vichy Dercos Anti Dandruff Normal ve Yağlı Saçlar İçin Kepeklenmeye Karşı Etkili Bakım Şampuanı 390 ml](https://www.trendyol.com/vichy/dercos-anti-dandruff-normal-ve-yagli-saclar-icin-kepeklenmeye-karsi-etkili-bakim-sampuani-390-ml-p-84859?boutiqueId=61&merchantId=819525) | Vichy | Dermoface | 1132 | InStock | 4.4 | 6880 | 3304 | refreshed |  | Kargo Bedava |
+| 113 | 68 | 26 | 18.6 | [ILLUSIONE FRAGRANCE Kadın Parfüm Deneme Seti 10x2 20ml](https://www.trendyol.com/illusione-fragrance/kadin-parfum-deneme-seti-10x2-20ml-p-847778752?boutiqueId=61&merchantId=1194094) | ILLUSIONE FRAGRANCE | ILLUSIONE PERFUME | 299 | InStock | 3.9 | 534 | 89 | refreshed |  | Kargo Bedava |

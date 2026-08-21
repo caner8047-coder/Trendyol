@@ -33,6 +33,11 @@
     "dashboard": "node dashboard/server.cjs",
     "dashboard:test": "node --test dashboard/status.test.cjs",
     "dashboard:install": "bash scripts/install_dashboard_launch_agent.sh",
-    "dashboard:open": "bash scripts/open_dashboard.sh"
+    "dashboard:open": "bash scripts/open_dashboard.sh",
+    "taxonomy:discover": "node scripts/discover_bestseller_taxonomy.cjs",
+    "taxonomy:shard": "node scripts/collect_taxonomy_shard.cjs",
+    "taxonomy:finalize": "node scripts/finalize_taxonomy_run.cjs",
+    "taxonomy:test": "node --test scripts/taxonomy.test.cjs",
+    "taxonomy:install": "bash scripts/install_taxonomy_hermes_jobs.sh"
   }
 }

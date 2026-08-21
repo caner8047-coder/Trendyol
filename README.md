@@ -98,3 +98,31 @@ npm run dashboard:test      # API/veri modeli kontrollerini çalıştırır
 ```
 
 Servis yönetimi için LaunchAgent etiketi `com.caner.trendyol-dashboard`'dur. Dashboard salt okunurdur; görev çalıştırmaz, durdurmaz veya veri dosyalarını değiştirmez.
+
+## Otomatik Çok Satanlar kategori evreni
+
+`taxonomy/` hattı, Trendyol Çok Satanlar menüsünü yalnız görünen ana sekmelerle sınırlamadan bütün alt dallarıyla keşfeder. Kategori bağlantılarının elle verilmesi gerekmez. Güncel katalog 19 ana kategori altında 4.003 kategori/alt kategori ve 6 seviye içerir; Trendyol ağaca yeni bir dal eklediğinde günlük keşif görevi bunu otomatik kataloğa alır.
+
+Yük ve veri değeri dengesi:
+
+- Bütün kategorilerin ilk 20 sıralaması her gün alınır.
+- Ana ve birinci seviye kategoriler her gün 200 ürüne kadar taranır.
+- Daha derin kategoriler günlük ilk 20'ye ek olarak 20 günlük dönüşümle 200 ürüne kadar genişletilir.
+- Ürünler tekilleştirilir; kategori–ürün sıralamaları ayrı tutulur.
+- Dört işçi çıktısı tamamlanmadan kalite kapısı GitHub'a veri göndermez; son geçerli rapor korunur.
+
+Üretilen dosyalar:
+
+- `taxonomy/catalog.json` ve `taxonomy/catalog.csv`: bütün kategori ağacı, kimlikler, üst kategori ve tam yol
+- `taxonomy/snapshots/YYYY-MM-DD/rankings.ndjson.gz`: kategori bazlı sıralama üyelikleri
+- `taxonomy/snapshots/YYYY-MM-DD/products.ndjson.gz`: tekilleştirilmiş ürün havuzu
+- `taxonomy/snapshots/YYYY-MM-DD/summary.json`: kalite ve kapsam özeti
+- `taxonomy/reports/YYYY-MM-DD.md`: günlük okunabilir rapor
+
+Hermes saat planı (Europe/Istanbul): 15:00 katalog keşfi; 15:10, 16:00, 16:50 ve 17:40 dört veri işçisi; 18:40 kalite, rapor, GitHub ve Telegram özeti. Ara işler modelsiz `no-agent` modunda çalışır; yalnız final raporu Telegram'a gider.
+
+```bash
+npm run taxonomy:discover
+npm run taxonomy:test
+npm run taxonomy:install
+```

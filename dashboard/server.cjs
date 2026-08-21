@@ -150,6 +150,52 @@ function commitFor(profile) {
   return { hash, shortHash: hash.slice(0, 7), committedAt, subject: subject.join('|') };
 }
 
+function buildTaxonomyStatus(jobByName, executions, today) {
+  const catalog = readJson(path.join(ROOT, 'taxonomy', 'catalog.json'), {});
+  const latest = readJson(path.join(ROOT, 'taxonomy', 'status.json'), {});
+  const runtimeDir = path.join(ROOT, '.runtime', 'taxonomy', today);
+  const shardStatuses = [0, 1, 2, 3].map(shard => readJson(path.join(runtimeDir, `shard-${shard}.status.json`), {
+    shard, status: 'waiting', totalCategories: 0, completedCategories: 0, failedCategories: 0, products: 0, memberships: 0
+  }));
+  const definitions = [
+    ['trendyol-taxonomy-discovery', 'Ağacı yenile', '15:00'],
+    ['trendyol-taxonomy-shard-0', 'İşçi 1/4', '15:10'],
+    ['trendyol-taxonomy-shard-1', 'İşçi 2/4', '16:00'],
+    ['trendyol-taxonomy-shard-2', 'İşçi 3/4', '16:50'],
+    ['trendyol-taxonomy-shard-3', 'İşçi 4/4', '17:40'],
+    ['trendyol-taxonomy-finalize', 'Kalite + GitHub', '18:40']
+  ];
+  const stages = definitions.map(([name, label, fallback]) => {
+    const job = jobByName.get(name) || null;
+    const execution = executions.find(item => item.job_id === job?.id) || null;
+    const status = execution?.status || job?.last_status || 'waiting';
+    return {
+      name, label, jobId: job?.id || null, schedule: cronTime(job?.schedule_display, fallback),
+      enabled: job?.enabled !== false && Boolean(job), status,
+      lastRunAt: isoOrNull(job?.last_run_at || execution?.started_at), nextRunAt: isoOrNull(job?.next_run_at),
+      error: errorSummary(job?.last_error || execution?.error)
+    };
+  });
+  const completedToday = shardStatuses.reduce((sum, shard) => sum + Number(shard.completedCategories || 0), 0);
+  const failedToday = shardStatuses.reduce((sum, shard) => sum + Number(shard.failedCategories || 0), 0);
+  return {
+    catalog: {
+      generatedAt: isoOrNull(catalog.generatedAt), total: catalog.stats?.total || 0, roots: catalog.stats?.roots || 0,
+      leaves: catalog.stats?.leaves || 0, maxDepth: catalog.stats?.maxDepth ?? null, levels: catalog.stats?.levels || {}, rootsBreakdown: catalog.roots || []
+    },
+    latest: {
+      date: latest.date || null, status: latest.status || 'WAITING', coveredCategories: latest.coveredCategories || 0,
+      totalCategories: latest.totalCategories || catalog.stats?.total || 0, coverage: latest.coverage || 0,
+      uniqueProducts: latest.uniqueProducts || 0, rankingMemberships: latest.rankingMemberships || 0,
+      failedCategories: latest.failedCategories || 0
+    },
+    today: { completedCategories: completedToday, failedCategories: failedToday, shards: shardStatuses },
+    stages,
+    reportUrl: '/taxonomy/report',
+    githubUrl: `${GITHUB_BASE}/taxonomy/reports/${latest.date ? 'latest.md' : 'catalog.md'}`
+  };
+}
+
 function buildStatus({ bypassCache = false } = {}) {
   if (!bypassCache && statusCache.value && statusCache.expiresAt > Date.now()) return statusCache.value;
   const jobsData = readJson(JOBS_FILE, { jobs: [], updated_at: null });
@@ -259,6 +305,7 @@ function buildStatus({ bypassCache = false } = {}) {
       heartbeat: fs.existsSync(path.join(HERMES_CRON_DIR, 'ticker_heartbeat')) ? fs.readFileSync(path.join(HERMES_CRON_DIR, 'ticker_heartbeat'), 'utf8').trim() : null,
       lastSuccess: fs.existsSync(path.join(HERMES_CRON_DIR, 'ticker_last_success')) ? fs.readFileSync(path.join(HERMES_CRON_DIR, 'ticker_last_success'), 'utf8').trim() : null
     },
+    taxonomy: buildTaxonomyStatus(jobByName, executions, today),
     profiles,
     recentEvents
   };
@@ -300,6 +347,11 @@ function requestHandler(req, res) {
   if (url.pathname === '/api/status') {
     try { return send(res, 200, JSON.stringify(buildStatus({ bypassCache: url.searchParams.has('fresh') })), 'application/json; charset=utf-8'); }
     catch (error) { return send(res, 500, JSON.stringify({ error: error.message }), 'application/json; charset=utf-8'); }
+  }
+  if (url.pathname === '/taxonomy/report') {
+    const latest = path.join(ROOT, 'taxonomy', 'reports', 'latest.md');
+    const file = fs.existsSync(latest) ? latest : path.join(ROOT, 'taxonomy', 'reports', 'catalog.md');
+    return fs.existsSync(file) ? send(res, 200, fs.readFileSync(file), 'text/markdown; charset=utf-8') : send(res, 404, 'Kategori evreni raporu henüz oluşmadı.');
   }
   const reportMatch = url.pathname.match(/^\/report\/([a-z0-9-]+)$/);
   if (reportMatch) {

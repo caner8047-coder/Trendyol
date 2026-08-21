@@ -41,6 +41,36 @@ function renderSummary() {
   $('#summaryCards').innerHTML = cards.map(([label,value,detail,cls]) => `<article class="stat ${cls}"><span class="stat-label">${label}</span><strong class="stat-value">${value}</strong><span class="stat-detail">${detail}</span></article>`).join('');
 }
 
+function taxonomyStageState(stage) {
+  if (!stage.enabled) return 'paused';
+  if (['running','claimed'].includes(stage.status)) return 'running';
+  if (['failed','error'].includes(stage.status)) return 'failed';
+  if (['completed','ok'].includes(stage.status)) return 'healthy';
+  return 'waiting';
+}
+
+function renderTaxonomy() {
+  const taxonomy = state.data.taxonomy;
+  if (!taxonomy) return;
+  const catalog = taxonomy.catalog; const latest = taxonomy.latest; const today = taxonomy.today;
+  const runFresh = latest.date === state.data.today;
+  $('#taxonomyOverview').innerHTML = [
+    ['Toplam kategori',fmtNumber(catalog.total),`${catalog.roots} ana kategori`],
+    ['Derinlik',catalog.maxDepth == null ? '—' : `${catalog.maxDepth + 1} seviye`,`${fmtNumber(catalog.leaves)} uç kategori`],
+    ['Son tam kapsama',latest.totalCategories ? `%${latest.coverage}` : 'Bekleniyor',runFresh ? 'bugünün verisi' : (latest.date || 'henüz rapor yok')],
+    ['Benzersiz ürün',fmtNumber(latest.uniqueProducts),`${fmtNumber(latest.rankingMemberships)} sıralama kaydı`],
+    ['Bugünkü ilerleme',`${fmtNumber(today.completedCategories)}/${fmtNumber(catalog.total)}`,today.failedCategories ? `${today.failedCategories} kategori hatalı` : 'işçiler sırayla çalışır']
+  ].map(([label,value,detail]) => `<div class="taxonomy-stat"><span>${label}</span><strong>${value}</strong><small>${detail}</small></div>`).join('');
+  $('#taxonomyStages').innerHTML = taxonomy.stages.map(stage => {
+    const stateName = taxonomyStageState(stage);
+    return `<div class="taxonomy-stage ${stateName}"><i></i><span><strong>${escapeHtml(stage.label)}</strong><small>${stage.schedule} · ${stage.jobId || 'kurulmadı'}</small></span><b>${stateName === 'healthy' ? 'Hazır' : stateName === 'running' ? 'Çalışıyor' : stateName === 'failed' ? 'Hata' : stateName === 'paused' ? 'Eksik' : 'Bekliyor'}</b></div>`;
+  }).join('');
+  const topRoots = [...catalog.rootsBreakdown].sort((a,b)=>b.descendants-a.descendants).slice(0,10);
+  const max = Math.max(1,...topRoots.map(root=>root.descendants+1));
+  $('#taxonomyRoots').innerHTML = `<div class="taxonomy-roots-title"><span>En geniş ana kategoriler</span><small>Kategori + tüm alt dallar</small></div>` + topRoots.map(root => `<div class="root-row"><span>${escapeHtml(root.name)}</span><i><b style="width:${Math.max(2,(root.descendants+1)/max*100)}%"></b></i><strong>${fmtNumber(root.descendants+1)}</strong></div>`).join('');
+  $('#taxonomyGithub').href = taxonomy.githubUrl;
+}
+
 function renderTimeline() {
   $('#timeline').innerHTML = state.data.profiles.map(item => `<button class="timeline-item ${item.health}" data-open="${item.slug}"><span class="timeline-time">${item.schedule}</span><span class="timeline-name">${escapeHtml(item.label)}</span><span class="timeline-state">${healthText(item.health)}</span></button>`).join('');
 }
@@ -94,7 +124,7 @@ function openDrawer(slug) {
 function closeDrawer() { $('#detailDrawer').classList.remove('open'); $('#detailDrawer').setAttribute('aria-hidden','true'); setTimeout(() => $('#drawerBackdrop').hidden = true, 220); state.selected = null; }
 
 function renderAll() {
-  renderNext(); renderAlerts(); renderSummary(); renderTimeline(); renderJobs(); renderHistory(); renderEvents();
+  renderNext(); renderAlerts(); renderSummary(); renderTaxonomy(); renderTimeline(); renderJobs(); renderHistory(); renderEvents();
   $('#githubLink').href = state.data.repository.github;
   $('#lastUpdated').textContent = `Son kontrol ${fmtDateTime(state.data.generatedAt)} · 15 sn otomatik yenileme`;
   if (state.selected) openDrawer(state.selected);

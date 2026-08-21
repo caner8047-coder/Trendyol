@@ -3,10 +3,10 @@
 ## Yönetici özeti
 
 - **Kalite:** PASS
-- **Kategori kataloğu:** 4.003 kategori, 6 seviye
-- **Günlük kapsama:** 3.952/4.003 (%98,73)
+- **Kategori kataloğu:** 4.003 menü yolu, 3.952 benzersiz kategori kimliği, 6 seviye
+- **Günlük kapsama:** 3.952/3.952 benzersiz kategori (%100)
 - **Benzersiz ürün:** 67.232
-- **Kategori–ürün sıralama kaydı:** 85.099
+- **Kategori–ürün sıralama kaydı:** 83.963
 - **Hatalı kategori:** 0
 
 ## Tarama stratejisi

@@ -1,14 +1,15 @@
 {
   "schemaVersion": 1,
   "date": "2026-08-21",
-  "generatedAt": "2026-08-21T23:25:20+03:00",
+  "generatedAt": "2026-08-21T23:31:56+03:00",
   "status": "PASS",
-  "catalogGeneratedAt": "2026-08-21T19:24:43+03:00",
-  "totalCategories": 4003,
+  "catalogGeneratedAt": "2026-08-21T23:30:46+03:00",
+  "totalCategoryPaths": 4003,
+  "totalCategories": 3952,
   "coveredCategories": 3952,
-  "coverage": 98.73,
+  "coverage": 100,
   "uniqueProducts": 67232,
-  "rankingMemberships": 85099,
+  "rankingMemberships": 83963,
   "failedCategories": 0,
   "roots": [
     {

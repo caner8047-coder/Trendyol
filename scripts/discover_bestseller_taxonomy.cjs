@@ -29,9 +29,14 @@ async function discover() {
     const nodes = flattenTree(categories).sort((a, b) => a.path.localeCompare(b.path, 'tr'));
     const { timestamp } = nowIstanbul();
     const levels = Object.fromEntries([...new Set(nodes.map(node => node.level))].sort((a, b) => a - b).map(level => [level, nodes.filter(node => node.level === level).length]));
+    const uniqueCategoryIds = new Set(nodes.map(node => node.categoryId));
     const catalog = {
       schemaVersion: 1, sourceUrl: ROOT_URL, generatedAt: timestamp,
-      stats: { total: nodes.length, roots: nodes.filter(node => node.level === 0).length, leaves: nodes.filter(node => !node.hasChildren).length, parents: nodes.filter(node => node.hasChildren).length, maxDepth: Math.max(...nodes.map(node => node.level)), levels },
+      stats: {
+        total: nodes.length, uniqueCategoryIds: uniqueCategoryIds.size, duplicatePaths: nodes.length - uniqueCategoryIds.size,
+        roots: nodes.filter(node => node.level === 0).length, leaves: nodes.filter(node => !node.hasChildren).length,
+        parents: nodes.filter(node => node.hasChildren).length, maxDepth: Math.max(...nodes.map(node => node.level)), levels
+      },
       roots: nodes.filter(node => node.level === 0).map(node => ({ categoryId: node.categoryId, name: node.name, descendants: nodes.filter(candidate => candidate.rootId === node.categoryId).length - 1 })),
       nodes
     };
@@ -41,7 +46,9 @@ async function discover() {
     const rootRows = catalog.roots.map(root => `| [${root.name}](https://www.trendyol.com/cok-satanlar?categoryId=${root.categoryId}&type=bestSeller&webGenderId=1) | ${root.categoryId} | ${root.descendants + 1} |`).join('\n');
     const catalogReport = `# Trendyol Çok Satanlar Kategori Kataloğu\n\n` +
       `Son keşif: **${timestamp}**\n\n` +
-      `- Toplam kategori ve alt kategori: **${catalog.stats.total.toLocaleString('tr-TR')}**\n` +
+      `- Menüdeki kategori yolu: **${catalog.stats.total.toLocaleString('tr-TR')}**\n` +
+      `- Benzersiz kategori kimliği: **${catalog.stats.uniqueCategoryIds.toLocaleString('tr-TR')}**\n` +
+      `- Birden fazla yolda görünen tekrar: **${catalog.stats.duplicatePaths.toLocaleString('tr-TR')}**\n` +
       `- Ana kategori: **${catalog.stats.roots}**\n- Uç kategori: **${catalog.stats.leaves.toLocaleString('tr-TR')}**\n` +
       `- En derin yol: **${catalog.stats.maxDepth + 1} seviye**\n\n` +
       `| Ana kategori | Kimlik | Toplam dal |\n|---|---:|---:|\n${rootRows}\n\n` +

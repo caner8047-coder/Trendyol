@@ -1,9 +1,11 @@
 {
   "schemaVersion": 1,
   "sourceUrl": "https://www.trendyol.com/cok-satanlar?type=bestSeller&webGenderId=1",
-  "generatedAt": "2026-08-21T19:24:43+03:00",
+  "generatedAt": "2026-08-21T23:30:46+03:00",
   "stats": {
     "total": 4003,
+    "uniqueCategoryIds": 3952,
+    "duplicatePaths": 51,
     "roots": 19,
     "leaves": 3512,
     "parents": 491,

@@ -17,7 +17,7 @@ test('kategori ağacını bütün derinlikleriyle düzleştirir', () => {
 });
 
 test('kategori işçilerini çakışmadan shardlara böler', () => {
-  const nodes = [{categoryId:27},{categoryId:28},{categoryId:29},{categoryId:30}];
+  const nodes = [{categoryId:27},{categoryId:28},{categoryId:29},{categoryId:30},{categoryId:27}];
   const assigned = [0,1,2,3].flatMap(shard => shardNodes(nodes, shard, 4));
   assert.deepEqual(assigned.map(item => item.categoryId).sort(), [27,28,29,30]);
 });

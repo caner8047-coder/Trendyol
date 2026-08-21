@@ -30,12 +30,14 @@ function finalize({ shardCount = 4 } = {}) {
     if (result.status !== 'PASS') throw new Error(`Shard ${shard} kalite durumu ${result.status}`);
     shards.push(result);
   }
-  const productMap = new Map(); const memberships = []; const failures = []; const successfulCategoryIds = [];
+  const productMap = new Map(); const membershipMap = new Map(); const failures = []; const successfulCategoryIds = [];
   for (const shard of shards) {
     for (const product of shard.products) productMap.set(product.productKey, product);
-    memberships.push(...shard.memberships); failures.push(...shard.failures);
+    for (const membership of shard.memberships) membershipMap.set(`${membership.categoryId}:${membership.rank}:${membership.productKey}`, membership);
+    failures.push(...shard.failures);
     successfulCategoryIds.push(...(shard.successfulCategoryIds || shard.memberships.map(row => row.categoryId)));
   }
+  const memberships = [...membershipMap.values()];
   memberships.sort((a, b) => a.categoryId - b.categoryId || a.rank - b.rank || a.productKey.localeCompare(b.productKey));
   const products = [...productMap.values()].sort((a, b) => a.productKey.localeCompare(b.productKey));
   const covered = new Set(successfulCategoryIds);
@@ -47,11 +49,13 @@ function finalize({ shardCount = 4 } = {}) {
     const coveredCount = [...ids].filter(id => covered.has(id)).length;
     return { ...root, totalCategories: ids.size, coveredCategories: coveredCount, coverage: Math.round(coveredCount / ids.size * 10000) / 100 };
   });
-  const coverage = Math.round(covered.size / catalog.stats.total * 10000) / 100;
-  const status = failures.length <= Math.ceil(catalog.stats.total * 0.05) && coverage >= 95 ? 'PASS' : 'FAIL';
+  const uniqueCategories = catalog.stats.uniqueCategoryIds || new Set(catalog.nodes.map(node => node.categoryId)).size;
+  const coverage = Math.round(covered.size / uniqueCategories * 10000) / 100;
+  const status = failures.length <= Math.ceil(uniqueCategories * 0.05) && coverage >= 95 ? 'PASS' : 'FAIL';
   const summary = {
     schemaVersion: 1, date, generatedAt: timestamp, status,
-    catalogGeneratedAt: catalog.generatedAt, totalCategories: catalog.stats.total,
+    catalogGeneratedAt: catalog.generatedAt, totalCategoryPaths: catalog.stats.total,
+    totalCategories: uniqueCategories,
     coveredCategories: covered.size, coverage, uniqueProducts: products.length,
     rankingMemberships: memberships.length, failedCategories: failures.length,
     roots, levels: catalog.stats.levels, shards: shards.map(item => ({ shard: item.shard, categories: item.totalCategories, successRate: item.successRate, products: item.products.length, memberships: item.memberships.length }))
@@ -61,8 +65,8 @@ function finalize({ shardCount = 4 } = {}) {
   const rootRows = roots.map(root => `| ${root.name} | ${formatNumber(root.coveredCategories)}/${formatNumber(root.totalCategories)} | %${root.coverage.toLocaleString('tr-TR')} |`).join('\n');
   const report = `# Trendyol Çok Satanlar Kategori Evreni — ${date}\n\n` +
     `## Yönetici özeti\n\n` +
-    `- **Kalite:** ${status}\n- **Kategori kataloğu:** ${formatNumber(catalog.stats.total)} kategori, ${catalog.stats.maxDepth + 1} seviye\n` +
-    `- **Günlük kapsama:** ${formatNumber(covered.size)}/${formatNumber(catalog.stats.total)} (%${coverage.toLocaleString('tr-TR')})\n` +
+    `- **Kalite:** ${status}\n- **Kategori kataloğu:** ${formatNumber(catalog.stats.total)} menü yolu, ${formatNumber(uniqueCategories)} benzersiz kategori kimliği, ${catalog.stats.maxDepth + 1} seviye\n` +
+    `- **Günlük kapsama:** ${formatNumber(covered.size)}/${formatNumber(uniqueCategories)} benzersiz kategori (%${coverage.toLocaleString('tr-TR')})\n` +
     `- **Benzersiz ürün:** ${formatNumber(products.length)}\n- **Kategori–ürün sıralama kaydı:** ${formatNumber(memberships.length)}\n` +
     `- **Hatalı kategori:** ${formatNumber(failures.length)}\n\n` +
     `## Tarama stratejisi\n\nBütün kategorilerin ilk 20 ürünü her gün izlenir. Ana ve birinci seviye kategoriler günlük 200 ürüne kadar taranır. Daha derin kategoriler 20 günlük dönüşümle sırayla 200 ürüne kadar genişletilir. Böylece bütün ağaç günlük görünür kalırken Trendyol'a ve bilgisayara aşırı yük bindirilmez.\n\n` +
@@ -70,7 +74,7 @@ function finalize({ shardCount = 4 } = {}) {
     `## Veri dosyaları\n\n- [Kategori kataloğu](../catalog.csv)\n- [Günlük özet](../snapshots/${date}/summary.json)\n- Günlük sıralamalar: \`taxonomy/snapshots/${date}/rankings.ndjson.gz\`\n- Tekilleştirilmiş ürünler: \`taxonomy/snapshots/${date}/products.ndjson.gz\`\n`;
   writeTextAtomic(path.join(ROOT, 'taxonomy', 'reports', `${date}.md`), report);
   writeTextAtomic(path.join(ROOT, 'taxonomy', 'reports', 'latest.md'), report);
-  const telegram = `🌳 Trendyol Çok Satanlar Kategori Evreni — ${date}\n${status === 'PASS' ? '✅' : '⚠️'} ${formatNumber(covered.size)}/${formatNumber(catalog.stats.total)} kategori (%${coverage.toLocaleString('tr-TR')})\n📦 ${formatNumber(products.length)} benzersiz ürün · ${formatNumber(memberships.length)} sıralama kaydı\n🧭 ${catalog.stats.maxDepth + 1} seviye · ${catalog.stats.roots} ana kategori\n🔗 https://github.com/caner8047-coder/Trendyol/blob/main/taxonomy/reports/${date}.md\n`;
+  const telegram = `🌳 Trendyol Çok Satanlar Kategori Evreni — ${date}\n${status === 'PASS' ? '✅' : '⚠️'} ${formatNumber(covered.size)}/${formatNumber(uniqueCategories)} benzersiz kategori (%${coverage.toLocaleString('tr-TR')})\n🗂️ ${formatNumber(catalog.stats.total)} menü yolu · ${formatNumber(catalog.stats.duplicatePaths || 0)} tekrar yol\n📦 ${formatNumber(products.length)} benzersiz ürün · ${formatNumber(memberships.length)} sıralama kaydı\n🧭 ${catalog.stats.maxDepth + 1} seviye · ${catalog.stats.roots} ana kategori\n🔗 https://github.com/caner8047-coder/Trendyol/blob/main/taxonomy/reports/${date}.md\n`;
   writeTextAtomic(path.join(ROOT, 'taxonomy', 'reports', 'telegram-latest.txt'), telegram);
   if (status !== 'PASS') throw new Error(`Kategori evreni kalite kapısı başarısız: %${coverage}`);
   return summary;

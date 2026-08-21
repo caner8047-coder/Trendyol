@@ -20,7 +20,12 @@ function categoryPages(node, date, options = {}) {
   return (node.categoryId + dayNumber(date)) % cycleDays === 0 ? 10 : 1;
 }
 function shardNodes(nodes, shard, shardCount) {
-  return nodes.filter(node => node.categoryId % shardCount === shard);
+  const seen = new Set();
+  return nodes.filter(node => {
+    if (node.categoryId % shardCount !== shard || seen.has(node.categoryId)) return false;
+    seen.add(node.categoryId);
+    return true;
+  });
 }
 
 async function collect() {

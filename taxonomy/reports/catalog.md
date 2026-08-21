@@ -1,8 +1,10 @@
 # Trendyol Çok Satanlar Kategori Kataloğu
 
-Son keşif: **2026-08-21T19:24:43+03:00**
+Son keşif: **2026-08-21T23:30:46+03:00**
 
-- Toplam kategori ve alt kategori: **4.003**
+- Menüdeki kategori yolu: **4.003**
+- Benzersiz kategori kimliği: **3.952**
+- Birden fazla yolda görünen tekrar: **51**
 - Ana kategori: **19**
 - Uç kategori: **3.512**
 - En derin yol: **6 seviye**

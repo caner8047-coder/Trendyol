@@ -55,11 +55,11 @@ function renderTaxonomy() {
   const catalog = taxonomy.catalog; const latest = taxonomy.latest; const today = taxonomy.today;
   const runFresh = latest.date === state.data.today;
   $('#taxonomyOverview').innerHTML = [
-    ['Toplam kategori',fmtNumber(catalog.total),`${catalog.roots} ana kategori`],
+    ['Kategori evreni',fmtNumber(catalog.total),`${fmtNumber(catalog.uniqueCategories)} benzersiz kimlik · ${catalog.duplicatePaths} tekrar`],
     ['Derinlik',catalog.maxDepth == null ? '—' : `${catalog.maxDepth + 1} seviye`,`${fmtNumber(catalog.leaves)} uç kategori`],
     ['Son tam kapsama',latest.totalCategories ? `%${latest.coverage}` : 'Bekleniyor',runFresh ? 'bugünün verisi' : (latest.date || 'henüz rapor yok')],
     ['Benzersiz ürün',fmtNumber(latest.uniqueProducts),`${fmtNumber(latest.rankingMemberships)} sıralama kaydı`],
-    ['Bugünkü ilerleme',`${fmtNumber(today.completedCategories)}/${fmtNumber(catalog.total)}`,today.failedCategories ? `${today.failedCategories} kategori hatalı` : 'işçiler sırayla çalışır']
+    ['Bugünkü ilerleme',`${fmtNumber(today.completedCategories)}/${fmtNumber(catalog.uniqueCategories)}`,today.failedCategories ? `${today.failedCategories} kategori hatalı` : 'işçiler sırayla çalışır']
   ].map(([label,value,detail]) => `<div class="taxonomy-stat"><span>${label}</span><strong>${value}</strong><small>${detail}</small></div>`).join('');
   $('#taxonomyStages').innerHTML = taxonomy.stages.map(stage => {
     const stateName = taxonomyStageState(stage);

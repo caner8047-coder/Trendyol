@@ -176,11 +176,14 @@ function buildTaxonomyStatus(jobByName, executions, today) {
       error: errorSummary(job?.last_error || execution?.error)
     };
   });
-  const completedToday = shardStatuses.reduce((sum, shard) => sum + Number(shard.completedCategories || 0), 0);
+  const completedTodayRaw = shardStatuses.reduce((sum, shard) => sum + Number(shard.completedCategories || 0), 0);
+  const completedToday = Math.min(completedTodayRaw, catalog.stats?.uniqueCategoryIds || catalog.stats?.total || completedTodayRaw);
   const failedToday = shardStatuses.reduce((sum, shard) => sum + Number(shard.failedCategories || 0), 0);
   return {
     catalog: {
-      generatedAt: isoOrNull(catalog.generatedAt), total: catalog.stats?.total || 0, roots: catalog.stats?.roots || 0,
+      generatedAt: isoOrNull(catalog.generatedAt), total: catalog.stats?.total || 0,
+      uniqueCategories: catalog.stats?.uniqueCategoryIds || catalog.stats?.total || 0,
+      duplicatePaths: catalog.stats?.duplicatePaths || 0, roots: catalog.stats?.roots || 0,
       leaves: catalog.stats?.leaves || 0, maxDepth: catalog.stats?.maxDepth ?? null, levels: catalog.stats?.levels || {}, rootsBreakdown: catalog.roots || []
     },
     latest: {

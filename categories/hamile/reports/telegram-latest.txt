@@ -1,7 +1,7 @@
-📊 Trendyol Hamile Günlük Raporu — 2026-08-21
-✅ 200 ürünlük havuz | 197/200 detay yenilendi | kalite PASS
+📊 Trendyol Hamile Günlük Raporu — 2026-08-22
+✅ 200 ürünlük havuz | 200/200 detay yenilendi | kalite PASS
 ♻️ 200 ürünün tamamı günlük detay taramasında
-🔥 Trend: 1) Pierre Cardin Kadın Ten 6116 Pamuklu Kaplı Emzirme Sütyeni (467.41 TL) | 2) Arma Yıldız 3'lü Paket Kadın Renkli Pamuklu Likralı Yüksek Bel Hamile Lohusa Külot Esnek ve Rahat Kumaş (299.9 TL) | 3) MODALADY Kadın 3 Adet Emzirme Sütyeni (478.9 TL)
-🎯 Niche: 1) LadyMina Pijama Siyah Pileli Hamile Lahusa Pijama Takım | 2) Arma Yıldız Çıkarılabilir Pedli Emzirme Sütyeni 3'lü Beyaz Siyah Ten Pamuklu Göğüs Ucu Belli Etmez | 3) Pierre Cardin Kadın Ten 6116 Pamuklu Kaplı Emzirme Sütyeni
-📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/hamile/reports/2026-08-21.md
+🔥 Trend: 1) icollagen Kolajen Ve Prebiyotik Tablet (350 TL) | 2) LumenaScent Liora Kadın Parfüm Floral Edp 50 ml (426.55 TL) | 3) Magly Manyetik Yapı Blokları – Çocuklar İçin Renkli 3 Boyutlu 72 Parça Manyetik Karo Oyun Seti (1784.25 TL)
+🎯 Niche: 1) Embeauty Cherki Glow Argan Yağı İçerikli Besleyici Saç Parfümü 100 ml | 2) Çok Al Az ÖdeU.S. Polo Assn.Lacıvert-Bordo Kadın Omuz Çantası Us25655 Online ExclusiveTrendyol Plus’a ÖzelSepette2.659,99 TL2.799,99 TL | 3) MOEN Parmakla Yoğuran El Hissi Sunan Isıtmalı Masaj Aleti (Taşınabilir,Şarjlı) | Boyun,Sırt,Omuz,Bacak
+📁 GitHub: https://github.com/caner8047-coder/Trendyol/blob/main/categories/hamile/reports/2026-08-22.md
 Not: Yükselen/düşen listeleri ikinci ölçümden itibaren günlük farklarla dolacaktır.

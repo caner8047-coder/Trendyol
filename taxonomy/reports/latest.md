@@ -1,14 +1,14 @@
-# Trendyol Çok Satanlar Kategori Evreni — 2026-08-21
+# Trendyol Çok Satanlar Kategori Evreni — 2026-08-22
 
 ## Yönetici özeti
 
 - **Kalite:** PASS
 - **Kategori kataloğu:** 4.003 menü yolu, 3.952 benzersiz kategori kimliği, 6 seviye
 - **Günlük kapsama:** 3.952/3.952 benzersiz kategori (%100)
-- **Benzersiz ürün:** 67.232
-- **Kategori–ürün sıralama kaydı:** 83.963
-- **Ürün döndüren kategori:** 3.678
-- **Başarılı fakat boş kategori:** 274
+- **Benzersiz ürün:** 67.166
+- **Kategori–ürün sıralama kaydı:** 83.889
+- **Ürün döndüren kategori:** 3.677
+- **Başarılı fakat boş kategori:** 275
 - **Hatalı kategori:** 0
 
 ## Tarama stratejisi
@@ -42,6 +42,6 @@ Bütün kategorilerin ilk 20 ürünü her gün izlenir. Ana ve birinci seviye ka
 ## Veri dosyaları
 
 - [Kategori kataloğu](../catalog.csv)
-- [Günlük özet](../snapshots/2026-08-21/summary.json)
-- Günlük sıralamalar: `taxonomy/snapshots/2026-08-21/rankings.ndjson.gz`
-- Tekilleştirilmiş ürünler: `taxonomy/snapshots/2026-08-21/products.ndjson.gz`
+- [Günlük özet](../snapshots/2026-08-22/summary.json)
+- Günlük sıralamalar: `taxonomy/snapshots/2026-08-22/rankings.ndjson.gz`
+- Tekilleştirilmiş ürünler: `taxonomy/snapshots/2026-08-22/products.ndjson.gz`

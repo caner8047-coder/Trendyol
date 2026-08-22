@@ -1,17 +1,18 @@
 {
-  "schemaVersion": 1,
-  "date": "2026-08-21",
-  "generatedAt": "2026-08-21T23:35:47+03:00",
+  "schemaVersion": 2,
+  "date": "2026-08-22",
+  "generatedAt": "2026-08-22T18:40:47+03:00",
   "status": "PASS",
-  "catalogGeneratedAt": "2026-08-21T23:30:46+03:00",
+  "catalogRunId": "2026-08-22T15:00:20+03:00",
+  "catalogGeneratedAt": "2026-08-22T15:00:20+03:00",
   "totalCategoryPaths": 4003,
   "totalCategories": 3952,
   "coveredCategories": 3952,
   "coverage": 100,
-  "uniqueProducts": 67232,
-  "rankingMemberships": 83963,
-  "categoriesWithProducts": 3678,
-  "emptyCategories": 274,
+  "uniqueProducts": 67166,
+  "rankingMemberships": 83889,
+  "categoriesWithProducts": 3677,
+  "emptyCategories": 275,
   "failedCategories": 0,
   "roots": [
     {
@@ -178,31 +179,31 @@
   "shards": [
     {
       "shard": 0,
-      "categories": 981,
+      "categories": 970,
       "successRate": 100,
-      "products": 17818,
-      "memberships": 19305
+      "products": 17672,
+      "memberships": 18907
     },
     {
       "shard": 1,
-      "categories": 1000,
+      "categories": 989,
       "successRate": 100,
-      "products": 17742,
-      "memberships": 19197
+      "products": 25693,
+      "memberships": 27239
     },
     {
       "shard": 2,
-      "categories": 1007,
+      "categories": 991,
       "successRate": 100,
-      "products": 25403,
-      "memberships": 27101
+      "products": 17563,
+      "memberships": 18554
     },
     {
       "shard": 3,
-      "categories": 1015,
+      "categories": 1002,
       "successRate": 100,
-      "products": 18273,
-      "memberships": 19496
+      "products": 18182,
+      "memberships": 19189
     }
   ]
 }
